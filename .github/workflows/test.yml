@@ -1,0 +1,102 @@
+name: Main
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    continue-on-error: true  # Don't block on linting (pre-existing issues)
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: uv pip install --system ruff
+
+      - name: Run linters
+        run: |
+          ruff check kstack_lib tests
+          ruff format --check kstack_lib tests
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+      fail-fast: false
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Load cached .venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests (unit tests only - no K8s required)
+        run: uv run pytest tests/ -v -m unit --cov=kstack_lib --cov-report=xml --cov-report=term --junitxml=junit.xml --cov-fail-under=0
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4
+        if: ${{ matrix.python-version == '3.13' }}
+        continue-on-error: true
+
+      - name: Testspace client setup
+        uses: testspace-com/setup-testspace@v1
+        with:
+          domain: ${{ github.repository_owner }}
+          token: ${{ secrets.TESTSPACE_TOKEN }}
+        if: always()
+
+      - name: Push result to Testspace server
+        run: |
+          testspace junit.xml coverage.xml
+        if: always()
+
+  check-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Check if documentation can be built
+        run: uv run mkdocs build --strict
+
+      # Note: Documentation is deployed to ReadTheDocs, not GitHub Pages
+      # ReadTheDocs builds and deploys automatically from the repository

@@ -1,0 +1,133 @@
+[project]
+name = "kstack-lib"
+dynamic = ["version"]
+description = "KStack Library - Infrastructure client library for PartSnap services"
+authors = [{ name = "Laurent Brack", email = "laurent@partsnap.io" }]
+requires-python = ">=3.13,<3.14"
+readme = "README.md"
+dependencies = [
+    "pydantic>=2.7.1",
+    "pyyaml>=6.0.1",
+    "redis>=5.0.0",
+    "boto3>=1.28.0",
+    "aioboto3>=12.0.0",
+]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project.urls]
+Repository = "https://github.com/partsnap/kstack-lib"
+Documentation = "https://kstack-lib.readthedocs.io/"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    "mypy>=1.5.1",
+    "pre-commit>=3.4.0",
+    "types-pyyaml>=6.0.12",
+    "ruff>=0.3.4",
+]
+docs = [
+    "mkdocs>=1.4.2",
+    "mkdocs-material>=9.2.7",
+    "mkdocs-mermaid2-plugin>=1.1.1",
+    "pymdown-extensions>=10.7.1",
+    "mkdocstrings[python]>=0.25.2",
+    "mkdocs-github-admonitions-plugin>=0.0.2",
+    "mkdocs-exclude>=1.0.2",
+    "mkdocs-autorefs<1.4.0",
+]
+
+[tool.uv]
+default-groups = [
+    "dev",
+    "docs",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["kstack_lib"]
+
+[tool.hatch.build.targets.wheel]
+include = ["kstack_lib"]
+
+[tool.hatch.build]
+include = ["kstack_lib/py.typed"]
+
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0.dev0"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "kstack_lib/_version.py"
+
+[tool.mypy]
+files = ["kstack_lib"]
+disallow_untyped_defs = true
+exclude = ["kstack_lib/_version.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+markers = [
+    "unit: Unit tests (fast, no external dependencies)",
+    "integration: Integration tests (requires infrastructure)",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["kstack_lib"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+fix = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle
+    "F",       # pyflakes
+    "I",       # isort
+    "N",       # pep8-naming
+    "D",       # pydocstyle
+    "UP",      # pyupgrade
+    "B",       # flake8-bugbear
+    "C4",      # flake8-comprehensions
+]
+
+ignore = [
+    "D100",    # Missing docstring in public module
+    "D104",    # Missing docstring in public package
+    "D212",    # Multi-line docstring summary should start at the first line
+    "D415",    # First line should end with a period, question mark, or exclamation point
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101", "D"]  # Allow assert statements and missing docstrings in tests
