@@ -1,0 +1,83 @@
+site_name: KStack Library
+repo_url: https://github.com/partsnap/kstack-lib
+site_url: https://kstack-lib.readthedocs.io/
+site_description: Infrastructure client library for PartSnap services
+site_author: Laurent Brack
+edit_uri: edit/main/docs/
+repo_name: partsnap/kstack-lib
+copyright: 2024 PartSnap LLC.
+dev_addr: 127.0.0.1:8100
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide:
+      - Redis Client: guide/redis-client.md
+      - LocalStack Client: guide/localstack-client.md
+      - Configuration Discovery: guide/configuration.md
+  - API Reference:
+      - Clients: api/clients.md
+      - Configuration: api/config.md
+  - Development:
+      - Contributing: development/contributing.md
+      - Running Tests: development/testing.md
+  - Changelog: CHANGELOG.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [kstack_lib]
+          options:
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            members_order: source
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/partsnap/kstack-lib
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html

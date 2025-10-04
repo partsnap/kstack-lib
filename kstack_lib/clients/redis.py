@@ -28,14 +28,18 @@ Example:
 
 import asyncio
 import inspect
-from typing import Literal, Union
+from typing import TYPE_CHECKING, Literal
 
 from kstack_lib.config import get_redis_config
+
+if TYPE_CHECKING:
+    from redis import Redis
+    from redis.asyncio import Redis as AsyncRedis
 
 
 def create_redis_client(
     database: Literal["part-raw", "part-audit"] = "part-raw",
-) -> Union["Redis", "AsyncRedis"]:  # type: ignore
+) -> "Redis | AsyncRedis":  # type: ignore[name-defined]
     """
     Create a Redis client using automatic configuration discovery.
 
@@ -173,7 +177,9 @@ def _create_async_redis_client(
     )
 
 
-def get_redis_client(database: Literal["part-raw", "part-audit"] = "part-raw"):
+def get_redis_client(
+    database: Literal["part-raw", "part-audit"] = "part-raw",
+) -> "Redis | AsyncRedis":  # type: ignore[name-defined]
     """
     Alias for create_redis_client() for backward compatibility.
 

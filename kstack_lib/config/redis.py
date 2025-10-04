@@ -86,7 +86,8 @@ class RedisDiscovery:
         return "development"
 
     def get_redis_config(
-        self, database: Literal["part-raw", "part-audit"] = "part-raw",
+        self,
+        database: Literal["part-raw", "part-audit"] = "part-raw",
     ) -> RedisConfig:
         """
         Get Redis configuration for the active route.

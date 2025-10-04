@@ -72,6 +72,9 @@ files = ["kstack_lib"]
 disallow_untyped_defs = true
 exclude = ["kstack_lib/_version.py"]
 
+[tool.ruff.lint.extend-per-file-ignores]
+"kstack_lib/_version.py" = ["UP007"]  # Ignore Union -> | for generated version file
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
