@@ -109,7 +109,7 @@ def _is_async_context() -> bool:
 
 def _create_sync_redis_client(
     database: Literal["part-raw", "part-audit"] = "part-raw",
-):
+) -> "Redis":  # type: ignore[name-defined]
     """
     Create a synchronous Redis client.
 
@@ -144,7 +144,7 @@ def _create_sync_redis_client(
 
 def _create_async_redis_client(
     database: Literal["part-raw", "part-audit"] = "part-raw",
-):
+) -> "AsyncRedis":  # type: ignore[name-defined]
     """
     Create an asynchronous Redis client.
 

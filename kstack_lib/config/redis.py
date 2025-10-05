@@ -43,6 +43,22 @@ class RedisDiscovery:
         self.kstack_root = Path(__file__).parent.parent.parent
         self.vault_dir = self.kstack_root / "vault" / "dev"
 
+    def get_current_namespace(self) -> str:
+        """
+        Get the current Kubernetes namespace.
+
+        Returns:
+            Current namespace name, or 'layer-3-cloud' as default
+
+        """
+        # Check if running in a pod (K8s injects this file)
+        namespace_file = Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+        if namespace_file.exists():
+            return namespace_file.read_text().strip()
+
+        # Default to layer-3-cloud for kubectl-based access
+        return "layer-3-cloud"
+
     def get_active_route(self) -> str:
         """
         Get the currently active KStack route.
@@ -120,10 +136,26 @@ class RedisDiscovery:
                     password=config["password"],
                 )
 
+        # Try environment variables first (set by K8s deployment)
+        env_prefix = "AUDIT_" if database == "part-audit" else ""
+        host_env = os.environ.get(f"{env_prefix}REDIS_CLIENT_HOST")
+        port_env = os.environ.get(f"{env_prefix}REDIS_CLIENT_PORT")
+        password_env = os.environ.get(f"{env_prefix}REDIS_PASSWORD")
+        username_env = os.environ.get(f"{env_prefix}REDIS_USERNAME", "default")
+
+        if host_env and port_env and password_env:
+            return RedisConfig(
+                host=host_env,
+                port=int(port_env),
+                username=username_env,
+                password=password_env,
+            )
+
         # Fall back to reading from Kubernetes Secret (for deployed environments)
         try:
             secret_name = f"redis-credentials-{active_route}"
             prefix = "audit-" if database == "part-audit" else ""
+            namespace = self.get_current_namespace()
 
             # Get values from K8s Secret
             host_result = subprocess.run(
@@ -133,7 +165,7 @@ class RedisDiscovery:
                     "secret",
                     secret_name,
                     "-n",
-                    "layer-3-cloud",
+                    namespace,
                     "-o",
                     f"jsonpath={{.data.{prefix}redis-host}}",
                 ],
@@ -149,7 +181,7 @@ class RedisDiscovery:
                     "secret",
                     secret_name,
                     "-n",
-                    "layer-3-cloud",
+                    namespace,
                     "-o",
                     f"jsonpath={{.data.{prefix}redis-port}}",
                 ],
@@ -165,7 +197,7 @@ class RedisDiscovery:
                     "secret",
                     secret_name,
                     "-n",
-                    "layer-3-cloud",
+                    namespace,
                     "-o",
                     f"jsonpath={{.data.{prefix}redis-username}}",
                 ],
@@ -181,7 +213,7 @@ class RedisDiscovery:
                     "secret",
                     secret_name,
                     "-n",
-                    "layer-3-cloud",
+                    namespace,
                     "-o",
                     f"jsonpath={{.data.{prefix}redis-password}}",
                 ],
