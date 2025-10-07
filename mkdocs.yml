@@ -12,6 +12,7 @@ nav:
   - Home: index.md
   - Getting Started: getting-started.md
   - User Guide:
+      - Secrets Management: guide/secrets-management.md
       - Redis Client: guide/redis-client.md
       - LocalStack Client: guide/localstack-client.md
       - Configuration Discovery: guide/configuration.md
