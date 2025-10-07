@@ -4,7 +4,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from kstack_lib.clients.localstack import (
+# boto3 and aioboto3 are optional dependencies, only test if available
+boto3 = pytest.importorskip("boto3", reason="boto3 not installed (optional dependency)")
+aioboto3 = pytest.importorskip("aioboto3", reason="aioboto3 not installed (optional dependency)")
+
+from kstack_lib.clients.localstack import (  # noqa: E402
     _create_async_localstack_client,
     _create_sync_localstack_client,
     _is_async_context,
