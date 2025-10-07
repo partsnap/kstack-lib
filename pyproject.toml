@@ -9,18 +9,13 @@ dependencies = [
     "pydantic>=2.7.1",
     "pyyaml>=6.0.1",
     "redis>=5.0.0",
+]
+
+[project.optional-dependencies]
+aws = [
     "boto3>=1.28.0",
     "aioboto3>=12.0.0",
 ]
-
-[tool.hatch.metadata]
-allow-direct-references = true
-
-[project.urls]
-Repository = "https://github.com/partsnap/kstack-lib"
-Documentation = "https://kstack-lib.readthedocs.io/"
-
-[dependency-groups]
 dev = [
     "pytest>=8.0.0",
     "pytest-cov>=4.0.0",
@@ -41,10 +36,30 @@ docs = [
     "mkdocs-autorefs<1.4.0",
 ]
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project.urls]
+Repository = "https://github.com/partsnap/kstack-lib"
+Documentation = "https://kstack-lib.readthedocs.io/"
+
 [tool.uv]
-default-groups = [
-    "dev",
-    "docs",
+dev-dependencies = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-asyncio>=0.23.0",
+    "mypy>=1.5.1",
+    "pre-commit>=3.4.0",
+    "types-pyyaml>=6.0.12",
+    "ruff>=0.3.4",
+    "mkdocs>=1.4.2",
+    "mkdocs-material>=9.2.7",
+    "mkdocs-mermaid2-plugin>=1.1.1",
+    "pymdown-extensions>=10.7.1",
+    "mkdocstrings[python]>=0.25.2",
+    "mkdocs-github-admonitions-plugin>=0.0.2",
+    "mkdocs-exclude>=1.0.2",
+    "mkdocs-autorefs<1.4.0",
 ]
 
 [tool.hatch.build.targets.sdist]
