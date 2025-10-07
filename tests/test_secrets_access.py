@@ -83,6 +83,7 @@ def mock_k8s_unavailable():
         yield mock_run
 
 
+@pytest.mark.unit
 class TestLayerAccessControl:
     """Test cross-layer access control logic."""
 
@@ -192,6 +193,7 @@ class TestLayerAccessControl:
         assert "aws-secret-key" in secrets
 
 
+@pytest.mark.unit
 class TestSharedWithValidation:
     """Test shared_with field validation."""
 
@@ -268,6 +270,7 @@ class TestSharedWithValidation:
         assert "internal-key" in layer1_secrets
 
 
+@pytest.mark.unit
 class TestEnvironmentVariableExport:
     """Test automatic export of secrets as environment variables."""
 
@@ -312,6 +315,7 @@ class TestEnvironmentVariableExport:
         os.environ.pop("KSTACK_VAULT_DIR", None)
 
 
+@pytest.mark.unit
 class TestSecretPrecedence:
     """Test precedence: environment variables > vault > defaults."""
 
@@ -336,6 +340,7 @@ class TestSecretPrecedence:
         os.environ.pop("REDIS_HOST", None)
 
 
+@pytest.mark.unit
 class TestMultipleVaultFiles:
     """Test loading secrets from multiple YAML files in same layer."""
 
@@ -354,6 +359,7 @@ class TestMultipleVaultFiles:
         assert len(secrets) >= 6  # At least 3 redis + 3 database keys
 
 
+@pytest.mark.unit
 class TestEdgeCases:
     """Test edge cases and error conditions."""
 
