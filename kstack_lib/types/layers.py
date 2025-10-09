@@ -27,21 +27,14 @@ class KStackLayer(Enum):
         """
         Get the Kubernetes namespace for this layer.
 
-        Maps descriptive enum names to actual K8s namespaces.
+        Returns the enum value, which is the K8s namespace name.
 
         Returns
         -------
-            Namespace name (e.g., 'layer-3-cloud')
+            Namespace name (e.g., 'layer-3-global-infra')
 
         """
-        # Map descriptive names to actual K8s namespaces
-        namespace_map = {
-            KStackLayer.LAYER_0_APPLICATIONS: "layer-0",
-            KStackLayer.LAYER_1_TENANT_INFRA: "layer-1",
-            KStackLayer.LAYER_2_GLOBAL_SERVICES: "layer-2-global",
-            KStackLayer.LAYER_3_GLOBAL_INFRA: "layer-3-cloud",
-        }
-        return namespace_map[self]
+        return self.value
 
     @property
     def display_name(self) -> str:
@@ -85,7 +78,7 @@ class KStackLayer(Enum):
 
         Args:
         ----
-            namespace: Kubernetes namespace (e.g., 'layer-3-cloud')
+            namespace: Kubernetes namespace (e.g., 'layer-3-global-infra')
 
         Returns:
         -------
@@ -97,9 +90,9 @@ class KStackLayer(Enum):
 
         Example:
         -------
-            >>> layer = KStackLayer.from_namespace('layer-3-cloud')
-            >>> layer.value
-            'layer-3-global-infra'
+            >>> layer = KStackLayer.from_namespace('layer-3-global-infra')
+            >>> layer == KStackLayer.LAYER_3_GLOBAL_INFRA
+            True
 
         """
         for layer in cls:

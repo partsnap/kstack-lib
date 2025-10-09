@@ -21,10 +21,10 @@ class TestKStackLayer:
 
     def test_namespace_property(self):
         """Test that namespace property maps to correct K8s namespaces."""
-        assert KStackLayer.LAYER_0_APPLICATIONS.namespace == "layer-0"
-        assert KStackLayer.LAYER_1_TENANT_INFRA.namespace == "layer-1"
-        assert KStackLayer.LAYER_2_GLOBAL_SERVICES.namespace == "layer-2-global"
-        assert KStackLayer.LAYER_3_GLOBAL_INFRA.namespace == "layer-3-cloud"
+        assert KStackLayer.LAYER_0_APPLICATIONS.namespace == "layer-0-applications"
+        assert KStackLayer.LAYER_1_TENANT_INFRA.namespace == "layer-1-tenant-infra"
+        assert KStackLayer.LAYER_2_GLOBAL_SERVICES.namespace == "layer-2-global-services"
+        assert KStackLayer.LAYER_3_GLOBAL_INFRA.namespace == "layer-3-global-infra"
 
     def test_display_name_property(self):
         """Test that display names are human-readable."""
@@ -42,16 +42,16 @@ class TestKStackLayer:
 
     def test_from_namespace(self):
         """Test reverse lookup from namespace to layer."""
-        layer = KStackLayer.from_namespace("layer-3-cloud")
+        layer = KStackLayer.from_namespace("layer-3-global-infra")
         assert layer == KStackLayer.LAYER_3_GLOBAL_INFRA
 
-        layer = KStackLayer.from_namespace("layer-2-global")
+        layer = KStackLayer.from_namespace("layer-2-global-services")
         assert layer == KStackLayer.LAYER_2_GLOBAL_SERVICES
 
-        layer = KStackLayer.from_namespace("layer-1")
+        layer = KStackLayer.from_namespace("layer-1-tenant-infra")
         assert layer == KStackLayer.LAYER_1_TENANT_INFRA
 
-        layer = KStackLayer.from_namespace("layer-0")
+        layer = KStackLayer.from_namespace("layer-0-applications")
         assert layer == KStackLayer.LAYER_0_APPLICATIONS
 
     def test_from_namespace_invalid(self):
@@ -83,9 +83,9 @@ class TestConfigMap:
     def test_init_with_auto_detect_success(self, tmp_path):
         """Test ConfigMap initialization with auto-detection."""
         namespace_file = tmp_path / "namespace"
-        namespace_file.write_text("layer-3-cloud")
+        namespace_file.write_text("layer-3-global-infra")
 
-        with patch("pathlib.Path.read_text", return_value="layer-3-cloud"):
+        with patch("pathlib.Path.read_text", return_value="layer-3-global-infra"):
             cfg = ConfigMap()
             assert cfg.layer == KStackLayer.LAYER_3_GLOBAL_INFRA
 
@@ -118,7 +118,7 @@ class TestConfigMap:
         # Verify kubectl was called with correct namespace
         mock_run.assert_called_once()
         call_args = mock_run.call_args[0][0]
-        assert "layer-3-cloud" in call_args
+        assert "layer-3-global-infra" in call_args
         assert "kstack-route" in call_args
 
     @patch("subprocess.run")
@@ -148,7 +148,7 @@ class TestConfigMap:
             assert "patch" in call_args
             assert "configmap" in call_args
             assert "kstack-route" in call_args
-            assert "layer-3-cloud" in call_args
+            assert "layer-3-global-infra" in call_args
             assert "testing" in " ".join(call_args)
 
             # Verify environment variable was set
@@ -167,7 +167,7 @@ class TestConfigMap:
         # Verify kubectl was called correctly
         call_args = mock_run.call_args[0][0]
         assert "kstack-route" in call_args
-        assert "layer-3-cloud" in call_args
+        assert "layer-3-global-infra" in call_args
         assert "active-route" in " ".join(call_args)
 
     @patch("subprocess.run")
@@ -186,12 +186,12 @@ class TestConfigMap:
         repr_str = repr(cfg)
         assert "ConfigMap" in repr_str
         assert "layer-3-global-infra" in repr_str
-        assert "layer-3-cloud" in repr_str
+        assert "layer-3-global-infra" in repr_str
 
     def test_different_layers_different_namespaces(self):
         """Test that different layers use different namespaces."""
         cfg_layer3 = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
         cfg_layer2 = ConfigMap(layer=KStackLayer.LAYER_2_GLOBAL_SERVICES)
 
-        assert cfg_layer3.layer.namespace == "layer-3-cloud"
-        assert cfg_layer2.layer.namespace == "layer-2-global"
+        assert cfg_layer3.layer.namespace == "layer-3-global-infra"
+        assert cfg_layer2.layer.namespace == "layer-2-global-services"

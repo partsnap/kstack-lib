@@ -90,10 +90,10 @@ class TestKStackLayerFromString:
 
     def test_from_namespace_method(self):
         """Test from_namespace with Kubernetes namespace names."""
-        assert KStackLayer.from_namespace("layer-0") == KStackLayer.LAYER_0_APPLICATIONS
-        assert KStackLayer.from_namespace("layer-1") == KStackLayer.LAYER_1_TENANT_INFRA
-        assert KStackLayer.from_namespace("layer-2-global") == KStackLayer.LAYER_2_GLOBAL_SERVICES
-        assert KStackLayer.from_namespace("layer-3-cloud") == KStackLayer.LAYER_3_GLOBAL_INFRA
+        assert KStackLayer.from_namespace("layer-0-applications") == KStackLayer.LAYER_0_APPLICATIONS
+        assert KStackLayer.from_namespace("layer-1-tenant-infra") == KStackLayer.LAYER_1_TENANT_INFRA
+        assert KStackLayer.from_namespace("layer-2-global-services") == KStackLayer.LAYER_2_GLOBAL_SERVICES
+        assert KStackLayer.from_namespace("layer-3-global-infra") == KStackLayer.LAYER_3_GLOBAL_INFRA
 
     def test_from_string_uppercase(self):
         """Test from_string is case-insensitive."""
