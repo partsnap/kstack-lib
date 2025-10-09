@@ -112,20 +112,24 @@ def test_get_redis_config_part_audit(temp_vault_file):
 
 @pytest.mark.unit
 def test_get_redis_config_missing_route_raises_error(temp_vault_file):
-    """Test that missing route configuration raises ValueError."""
+    """Test that missing route configuration raises ServiceNotFoundError."""
+    from kstack_lib.exceptions import ServiceNotFoundError
+
     with patch.dict(os.environ, {"KSTACK_ROUTE": "nonexistent"}):
         with patch.object(RedisDiscovery, "__init__", lambda self: None):
             discovery = RedisDiscovery()
             discovery.kstack_root = temp_vault_file
             discovery.vault_dir = temp_vault_file / "vault" / "dev"
 
-            with pytest.raises(ValueError, match="Redis configuration not found"):
+            with pytest.raises(ServiceNotFoundError, match="Redis configuration not found"):
                 discovery.get_redis_config(database="part-raw")
 
 
 @pytest.mark.unit
 def test_get_redis_config_missing_database_raises_error(temp_vault_file):
-    """Test that missing database configuration raises ValueError."""
+    """Test that missing database configuration raises ServiceNotFoundError."""
+    from kstack_lib.exceptions import ServiceNotFoundError
+
     with patch.dict(os.environ, {"KSTACK_ROUTE": "development"}):
         with patch.object(RedisDiscovery, "__init__", lambda self: None):
             discovery = RedisDiscovery()
@@ -147,7 +151,7 @@ def test_get_redis_config_missing_database_raises_error(temp_vault_file):
                 # Make kubectl calls fail
                 mock_run.side_effect = subprocess.CalledProcessError(1, ["kubectl"])
 
-                with pytest.raises(ValueError, match="Redis configuration not found"):
+                with pytest.raises(ServiceNotFoundError, match="Redis configuration not found"):
                     discovery.get_redis_config(database="part-audit")
 
 
@@ -256,10 +260,12 @@ def test_get_redis_config_from_kubernetes_secret_audit(mock_exists, mock_run):
 @patch("pathlib.Path.exists", return_value=False)
 @patch.dict(os.environ, {"KSTACK_ROUTE": "testing"})
 def test_get_redis_config_raises_on_all_failures(mock_exists, mock_run):
-    """Test that ValueError is raised when all config sources fail."""
+    """Test that ServiceNotFoundError is raised when all config sources fail."""
+    from kstack_lib.exceptions import ServiceNotFoundError
+
     discovery = RedisDiscovery()
 
-    with pytest.raises(ValueError, match="Redis configuration not found"):
+    with pytest.raises(ServiceNotFoundError, match="Redis configuration not found"):
         discovery.get_redis_config(database="part-raw")
 
 

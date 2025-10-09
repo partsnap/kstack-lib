@@ -1,15 +1,19 @@
 """
 Redis configuration discovery for KStack.
 
-Automatically discovers Redis endpoints based on the active route.
+Automatically discovers Redis endpoints based on the active route and layer.
 Applications use this to connect to the correct Redis instance without hardcoding credentials.
 
 Example:
 -------
-    from kstack_lib.config import get_redis_config
+    from kstack_lib.config import ConfigMap, get_redis_config
+    from kstack_lib.types import KStackLayer, KStackRedisDatabase
 
-    # Automatically discovers based on active route
-    config = get_redis_config(database='part-raw')
+    # Create ConfigMap for your layer
+    cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
+
+    # Get Redis configuration with type safety
+    config = get_redis_config(cfg, KStackRedisDatabase.PART_RAW)
     redis_client = Redis(
         host=config['host'],
         port=config['port'],
@@ -22,9 +26,15 @@ Example:
 import os
 import subprocess
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import TYPE_CHECKING, Literal, TypedDict
 
 import yaml
+
+from kstack_lib.exceptions import LayerAccessError, ServiceNotFoundError
+
+if TYPE_CHECKING:
+    from kstack_lib.config.configmap import ConfigMap
+    from kstack_lib.types import KStackRedisDatabase
 
 
 class RedisConfig(TypedDict):
@@ -242,33 +252,74 @@ class RedisDiscovery:
         except (subprocess.CalledProcessError, FileNotFoundError):
             pass
 
-        raise ValueError(
+        raise ServiceNotFoundError(
             f"Redis configuration not found for route '{active_route}' and database '{database}'. "
             f"Please ensure vault is configured or secrets are deployed.",
         )
 
 
 def get_redis_config(
-    database: Literal["part-raw", "part-audit"] = "part-raw",
+    config_map: "ConfigMap | None" = None,
+    database: "KStackRedisDatabase | Literal['part-raw', 'part-audit'] | None" = None,
 ) -> RedisConfig:
     """
-    Get Redis configuration for the active route.
-
-    Convenience function for getting Redis config without instantiating RedisDiscovery.
+    Get Redis configuration for the specified layer and database.
 
     Args:
     ----
-        database: Which database to connect to ('part-raw' or 'part-audit')
+        config_map: ConfigMap instance specifying which layer to access Redis from.
+                   If None, creates a default ConfigMap (backward compatibility).
+        database: Redis database to connect to. Can be:
+                 - KStackRedisDatabase enum (recommended)
+                 - String literal "part-raw" or "part-audit" (deprecated)
+                 If None, defaults to PART_RAW.
 
     Returns:
     -------
         RedisConfig with host, port, username, password
 
-    Example:
-    -------
+    Raises:
+    ------
+        LayerAccessError: If trying to access Redis from a layer that doesn't have it
+        ServiceNotFoundError: If configuration not found
+
+    Example (Recommended):
+    ---------------------
+        from kstack_lib.config import ConfigMap, get_redis_config
+        from kstack_lib.types import KStackLayer, KStackRedisDatabase
+
+        cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
+        config = get_redis_config(cfg, KStackRedisDatabase.PART_RAW)
+
+    Example (Deprecated but still supported):
+    -----------------------------------------
         config = get_redis_config(database='part-raw')
-        redis_client = Redis(**config)
 
     """
+    # Import here to avoid circular imports
+    from kstack_lib.config.configmap import ConfigMap
+    from kstack_lib.types import KStackLayer
+
+    # Handle backward compatibility - if no config_map provided, create default
+    if config_map is None:
+        # Default to Layer 3 for backward compatibility
+        config_map = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
+
+    # Validate layer - Redis is only in Layer 3
+    if config_map.layer != KStackLayer.LAYER_3_GLOBAL_INFRA:
+        raise LayerAccessError(
+            f"Redis databases are only available in {KStackLayer.LAYER_3_GLOBAL_INFRA.display_name}. "
+            f"You are trying to access from {config_map.layer.display_name}."
+        )
+
+    # Handle database parameter - support both enum and string for backward compatibility
+    if database is None:
+        database_str = "part-raw"  # Default
+    elif isinstance(database, str):
+        database_str = database
+    else:
+        # It's a KStackRedisDatabase enum
+        database_str = database.value
+
     discovery = RedisDiscovery()
-    return discovery.get_redis_config(database=database)
+    return discovery.get_redis_config(database=database_str)  # type: ignore[arg-type]

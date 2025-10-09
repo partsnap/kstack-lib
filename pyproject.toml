@@ -111,6 +111,7 @@ source = ["kstack_lib"]
 omit = [
     "*/tests/*",
     "*/test_*",
+    "*/clients/*",  # Client modules require real services for integration testing
 ]
 
 [tool.coverage.report]

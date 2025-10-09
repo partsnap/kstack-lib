@@ -12,6 +12,13 @@ Designed to be used by Layer 2 services (like PartFinder) to connect to Layer 3 
 from kstack_lib.clients.redis import create_redis_client, get_redis_client
 from kstack_lib.config.localstack import LocalStackDiscovery, get_localstack_config
 from kstack_lib.config.redis import RedisConfig, RedisDiscovery, get_redis_config
+from kstack_lib.exceptions import (
+    ConfigurationError,
+    KStackError,
+    LayerAccessError,
+    RouteError,
+    ServiceNotFoundError,
+)
 
 try:
     from kstack_lib._version import __version__
@@ -28,6 +35,12 @@ __all__ = [
     # LocalStack
     "LocalStackDiscovery",
     "get_localstack_config",
+    # Exceptions
+    "KStackError",
+    "LayerAccessError",
+    "ServiceNotFoundError",
+    "ConfigurationError",
+    "RouteError",
     # Version
     "__version__",
 ]
