@@ -2,6 +2,19 @@
 
 Infrastructure client library for PartSnap services.
 
+??? tip "Check the library version"
+
+    kstack-lib versioning is managed by hatch-vcs
+
+    ```bash
+        uv pip show kstack-lib
+        Name: kstack-lib
+        Version: 0.1.1.dev2+g88c942fe9.d19800101
+        Location: /home/lbrack/github/devops/kstack-lib/.venv/lib/python3.13/site-packages
+        Editable project location: /home/lbrack/github/devops/kstack-lib
+        Requires: pydantic, pyyaml, redis
+    ```
+
 ## Overview
 
 `kstack-lib` provides reusable components for Layer 2 services (like PartFinder) to connect to Layer 3 infrastructure (Redis, LocalStack) with automatic configuration discovery based on the active route.
