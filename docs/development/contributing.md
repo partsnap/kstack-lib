@@ -5,12 +5,14 @@ Guide for contributing to kstack-lib.
 ## Development Setup
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/partsnap/kstack-lib.git
    cd kstack-lib
    ```
 
 2. Install dependencies:
+
    ```bash
    uv sync
    ```
@@ -68,6 +70,7 @@ uv run mkdocs serve
 ## Pull Request Process
 
 1. Create a feature branch:
+
    ```bash
    git checkout -b feature/my-feature
    ```
@@ -75,6 +78,7 @@ uv run mkdocs serve
 2. Make your changes
 
 3. Run tests and linters:
+
    ```bash
    uv run pytest tests/ -v -m unit
    uv run ruff check kstack_lib tests
@@ -82,6 +86,7 @@ uv run mkdocs serve
    ```
 
 4. Commit with descriptive message:
+
    ```bash
    git commit -m "Add feature: XYZ"
    ```

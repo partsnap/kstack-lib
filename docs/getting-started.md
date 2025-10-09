@@ -15,6 +15,7 @@ dependencies = [
 ```
 
 Then run:
+
 ```bash
 uv sync
 ```
@@ -114,11 +115,11 @@ spec:
   template:
     spec:
       containers:
-      - name: my-service
-        envFrom:
-        - configMapRef:
-            name: kstack-route
-            namespace: layer-3-cloud
+        - name: my-service
+          envFrom:
+            - configMapRef:
+                name: kstack-route
+                namespace: layer-3-cloud
 ```
 
 ## Next Steps

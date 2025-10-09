@@ -33,6 +33,7 @@ data:
 ```
 
 Accessed via:
+
 ```bash
 kubectl get configmap kstack-route -n layer-3-cloud \
   -o jsonpath='{.data.active-route}'
@@ -51,6 +52,7 @@ Once the route is determined, configuration is loaded from:
 **Location**: `~/github/devops/partsnap-kstack/vault/dev/`
 
 **Redis Configuration**:
+
 ```yaml
 # redis-cloud.yaml
 development:
@@ -74,6 +76,7 @@ testing:
 ```
 
 **LocalStack Configuration**:
+
 ```yaml
 # localstack.yaml
 development:
@@ -92,6 +95,7 @@ testing:
 ### Kubernetes Deployment - Secrets
 
 **Redis Secret**:
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -111,6 +115,7 @@ data:
 ```
 
 **LocalStack Secret**:
+
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -177,11 +182,13 @@ except ValueError as e:
 ### Local Development
 
 1. Clone partsnap-kstack repository:
+
    ```bash
    git clone https://github.com/partsnap/partsnap-kstack.git ~/github/devops/partsnap-kstack
    ```
 
 2. Set route:
+
    ```bash
    export KSTACK_ROUTE=development
    ```
@@ -191,11 +198,12 @@ except ValueError as e:
 ### Kubernetes Deployment
 
 1. Mount ConfigMap in deployment:
+
    ```yaml
    envFrom:
-   - configMapRef:
-       name: kstack-route
-       namespace: layer-3-cloud
+     - configMapRef:
+         name: kstack-route
+         namespace: layer-3-cloud
    ```
 
 2. Secrets are read automatically by kstack-lib from `layer-3-cloud` namespace

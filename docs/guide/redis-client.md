@@ -53,6 +53,7 @@ redis_audit = create_redis_client(database='part-audit')
 The client automatically discovers Redis configuration from:
 
 1. **Local Development** - Vault file:
+
    ```yaml
    # ~/github/devops/partsnap-kstack/vault/dev/redis-cloud.yaml
    development:
@@ -105,6 +106,7 @@ async def safe_cache_get(mpn: str) -> dict | None:
 ## Best Practices
 
 1. **Always close async clients**:
+
    ```python
    redis = create_redis_client()
    try:
@@ -114,6 +116,7 @@ async def safe_cache_get(mpn: str) -> dict | None:
    ```
 
 2. **Use TTL for cache entries**:
+
    ```python
    await redis.setex('key', 3600, 'value')  # 1 hour TTL
    ```

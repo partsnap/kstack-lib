@@ -21,6 +21,7 @@ class LocalStackDiscovery:
     and provide AWS service emulation (S3, SQS, SNS, RDS, Lambda, etc.).
 
     Example:
+    -------
         discovery = LocalStackDiscovery()
         route = discovery.get_active_route()  # → "development"
         config = discovery.get_localstack_config()  # → {"endpoint_url": "http://...", ...}
@@ -32,6 +33,7 @@ class LocalStackDiscovery:
         Initialize LocalStack discovery.
 
         Args:
+        ----
             vault_dir: Path to vault directory (defaults to ./vault/dev)
 
         """
@@ -48,7 +50,8 @@ class LocalStackDiscovery:
         2. kstack-route ConfigMap in Kubernetes (for K8s deployments)
         3. Default to "development"
 
-        Returns:
+        Returns
+        -------
             Active route name (e.g., "development", "testing", "scratch")
 
         """
@@ -87,9 +90,11 @@ class LocalStackDiscovery:
         Get LocalStack configuration for the active route.
 
         Args:
+        ----
             route: Optional route override (uses active route if not specified)
 
         Returns:
+        -------
             Dictionary with LocalStack configuration:
             - endpoint_url: LocalStack endpoint (e.g., "http://localstack-development.layer-3-cloud:4566")
             - aws_access_key_id: AWS access key (usually "test")
@@ -97,6 +102,7 @@ class LocalStackDiscovery:
             - region_name: AWS region (usually "us-east-1")
 
         Raises:
+        ------
             ValueError: If configuration cannot be found
 
         """
@@ -165,12 +171,15 @@ def get_localstack_config(route: str | None = None) -> dict[str, Any]:
     retrieves configuration.
 
     Args:
+    ----
         route: Optional route override (uses active route if not specified)
 
     Returns:
+    -------
         Dictionary with LocalStack configuration
 
     Example:
+    -------
         config = get_localstack_config()
         # → {"endpoint_url": "http://localstack-development...", ...}
 

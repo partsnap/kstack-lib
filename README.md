@@ -10,6 +10,8 @@ This library is intentionally separate from `partsnap-kstack` (the CLI deploymen
 
 ## Features
 
+- **Layer Management**: Semantic layer enum with proper namespace mapping
+- **ConfigMap Access**: Clean API for accessing Kubernetes ConfigMaps per layer
 - **Secrets Management**: Layer-based access control with cross-layer secret sharing
 - **Redis Client Factory**: Auto-discovers Redis instances based on active route
 - **LocalStack Client Factory**: Auto-discovers LocalStack endpoints for AWS emulation
@@ -28,6 +30,27 @@ Or with uv:
 ```bash
 uv add git+https://github.com/partsnap/kstack-lib.git
 ```
+
+## Quick Start
+
+### Layer and ConfigMap Management
+
+```python
+from kstack_lib.config import ConfigMap, KStackLayer
+
+# Access ConfigMap for Layer 3
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
+
+# Get active route
+route = cfg.get_active_route()
+print(f"Active route: {route}")
+
+# Access layer information
+print(f"Namespace: {cfg.layer.namespace}")  # layer-3-cloud
+print(f"Display: {cfg.layer.display_name}")  # Layer 3: Global Infrastructure
+```
+
+See [examples/configmap_example.py](examples/configmap_example.py) for complete working example.
 
 ## Usage
 

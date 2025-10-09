@@ -5,6 +5,7 @@ Automatically discovers Redis endpoints based on the active route.
 Applications use this to connect to the correct Redis instance without hardcoding credentials.
 
 Example:
+-------
     from kstack_lib.config import get_redis_config
 
     # Automatically discovers based on active route
@@ -47,7 +48,8 @@ class RedisDiscovery:
         """
         Get the current Kubernetes namespace.
 
-        Returns:
+        Returns
+        -------
             Current namespace name, or 'layer-3-cloud' as default
 
         """
@@ -63,10 +65,12 @@ class RedisDiscovery:
         """
         Get the currently active KStack route.
 
-        Returns:
+        Returns
+        -------
             Active route name (e.g., 'development', 'staging', 'production')
 
-        Raises:
+        Raises
+        ------
             RuntimeError: If route cannot be determined
 
         """
@@ -109,12 +113,15 @@ class RedisDiscovery:
         Get Redis configuration for the active route.
 
         Args:
+        ----
             database: Which database to connect to ('part-raw' or 'part-audit')
 
         Returns:
+        -------
             RedisConfig with host, port, username, password
 
         Raises:
+        ------
             ValueError: If configuration not found
             FileNotFoundError: If vault files not found
 
@@ -250,12 +257,15 @@ def get_redis_config(
     Convenience function for getting Redis config without instantiating RedisDiscovery.
 
     Args:
+    ----
         database: Which database to connect to ('part-raw' or 'part-audit')
 
     Returns:
+    -------
         RedisConfig with host, port, username, password
 
     Example:
+    -------
         config = get_redis_config(database='part-raw')
         redis_client = Redis(**config)
 

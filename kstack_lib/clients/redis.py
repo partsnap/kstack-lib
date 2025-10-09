@@ -6,6 +6,7 @@ discover the correct instance based on the active route and vault credentials.
 Automatically detects async context and returns appropriate client type.
 
 Example:
+-------
     # Synchronous usage
     from kstack_lib.clients import create_redis_client
 
@@ -47,16 +48,20 @@ def create_redis_client(
     the appropriate client type (sync Redis or async Redis).
 
     Args:
+    ----
         database: Which database to connect to ('part-raw' or 'part-audit')
 
     Returns:
+    -------
         Redis or AsyncRedis client instance configured for the active route
 
     Raises:
+    ------
         ImportError: If redis package is not installed
         ValueError: If configuration cannot be found
 
     Example:
+    -------
         # Sync usage - returns sync client
         redis = create_redis_client(database='part-raw')
         redis.set('key', 'value')
@@ -84,7 +89,8 @@ def _is_async_context() -> bool:
     """
     Detect if the calling code is in an async context.
 
-    Returns:
+    Returns
+    -------
         True if called from async function or coroutine, False otherwise
 
     """
@@ -114,9 +120,11 @@ def _create_sync_redis_client(
     Create a synchronous Redis client.
 
     Args:
+    ----
         database: Which database to connect to
 
     Returns:
+    -------
         Synchronous Redis client instance
 
     """
@@ -149,9 +157,11 @@ def _create_async_redis_client(
     Create an asynchronous Redis client.
 
     Args:
+    ----
         database: Which database to connect to
 
     Returns:
+    -------
         Asynchronous Redis client instance
 
     """
@@ -184,9 +194,11 @@ def get_redis_client(
     Alias for create_redis_client() for backward compatibility.
 
     Args:
+    ----
         database: Which database to connect to ('part-raw' or 'part-audit')
 
     Returns:
+    -------
         Redis client instance configured for the active route
 
     """

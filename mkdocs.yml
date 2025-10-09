@@ -17,8 +17,12 @@ nav:
       - LocalStack Client: guide/localstack-client.md
       - Configuration Discovery: guide/configuration.md
   - API Reference:
-      - Clients: api/clients.md
+      - Overview: api/overview.md
+      - Types: api/types.md
       - Configuration: api/config.md
+      - Redis: api/redis.md
+      - LocalStack: api/localstack.md
+      - Clients: api/clients.md
   - Development:
       - Contributing: development/contributing.md
       - Running Tests: development/testing.md

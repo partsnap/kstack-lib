@@ -43,6 +43,7 @@ uv run pytest tests/ -v -m unit \
 ```
 
 View HTML coverage report:
+
 ```bash
 open htmlcov/index.html
 ```
@@ -80,11 +81,13 @@ async def test_real_redis_connection():
 ```
 
 Run only unit tests (CI/CD):
+
 ```bash
 uv run pytest tests/ -v -m unit
 ```
 
 Run integration tests (manual):
+
 ```bash
 uv run pytest tests/ -v -m integration
 ```
@@ -165,6 +168,7 @@ def test_kubernetes_configmap(mock_run):
 Minimum coverage: 80%
 
 Current coverage:
+
 - `kstack_lib/clients/redis.py`: 100%
 - `kstack_lib/clients/localstack.py`: 100%
 - `kstack_lib/config/redis.py`: 100%
@@ -173,6 +177,7 @@ Current coverage:
 ## Continuous Integration
 
 Tests run automatically on:
+
 - Every push to main
 - Every pull request
 - Manual workflow dispatch

@@ -10,7 +10,7 @@ on:
 jobs:
   lint:
     runs-on: ubuntu-latest
-    continue-on-error: true  # Don't block on linting (pre-existing issues)
+    continue-on-error: true # Don't block on linting (pre-existing issues)
     steps:
       - uses: actions/checkout@v4
 

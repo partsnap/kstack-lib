@@ -6,6 +6,7 @@ connect to LocalStack instances based on the active route. Automatically detects
 context and returns appropriate client type.
 
 Example:
+-------
     # Synchronous usage (boto3)
     from kstack_lib.clients import create_localstack_client
 
@@ -44,17 +45,21 @@ def create_localstack_client(
     the appropriate client type (boto3 for sync, aioboto3 for async).
 
     Args:
+    ----
         service_name: AWS service name (e.g., 's3', 'sqs', 'sns', 'rds', 'dynamodb')
         route: Optional route override (defaults to active route from KSTACK_ROUTE)
 
     Returns:
+    -------
         boto3 client (sync) or aioboto3 client context manager (async)
 
     Raises:
+    ------
         ImportError: If boto3/aioboto3 packages are not installed
         ValueError: If configuration cannot be found
 
     Example:
+    -------
         # Sync usage - returns boto3 client
         s3 = create_localstack_client('s3')
         buckets = s3.list_buckets()
@@ -82,7 +87,8 @@ def _is_async_context() -> bool:
     """
     Detect if the calling code is in an async context.
 
-    Returns:
+    Returns
+    -------
         True if called from async function or coroutine, False otherwise
 
     """
@@ -113,10 +119,12 @@ def _create_sync_localstack_client(
     Create a synchronous boto3 client for LocalStack.
 
     Args:
+    ----
         service_name: AWS service name
         route: Optional route override
 
     Returns:
+    -------
         boto3 client instance
 
     """
@@ -148,10 +156,12 @@ def _create_async_localstack_client(
     Create an asynchronous aioboto3 client for LocalStack.
 
     Args:
+    ----
         service_name: AWS service name
         route: Optional route override
 
     Returns:
+    -------
         aioboto3 Session.client context manager
 
     """
@@ -181,10 +191,12 @@ def get_localstack_client(service_name: str, route: str | None = None) -> Any:
     Alias for create_localstack_client() for backward compatibility.
 
     Args:
+    ----
         service_name: AWS service name
         route: Optional route override
 
     Returns:
+    -------
         boto3/aioboto3 client instance
 
     """

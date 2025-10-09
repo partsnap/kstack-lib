@@ -6,10 +6,10 @@ Supports layer-based access control and cross-layer secret sharing.
 
 Example:
 -------
-    from kstack_lib.config import load_secrets_for_layer
+    from kstack_lib.config import load_secrets_for_layer, KStackLayer
 
     # Load all accessible secrets for layer 0 and export as env vars
-    load_secrets_for_layer(layer="layer0", auto_export=True)
+    load_secrets_for_layer(layer=KStackLayer.LAYER_0_APPLICATIONS, auto_export=True)
 
     # Now environment variables are set and libraries like partsnap-rediscache can use them
     from partsnap_rediscache.config import RedisConfig
@@ -21,9 +21,14 @@ import base64
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import yaml
+
+if TYPE_CHECKING:
+    from kstack_lib.config.configmap import ConfigMap
+
+from kstack_lib.types import KStackLayer
 
 LayerName = Literal["layer0", "layer1", "layer2", "layer3"]
 
@@ -31,18 +36,38 @@ LayerName = Literal["layer0", "layer1", "layer2", "layer3"]
 class SecretsProvider:
     """Provides unified access to secrets from vault or K8s."""
 
-    def __init__(self, vault_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        config_map: Optional["ConfigMap"] = None,
+        vault_dir: Path | None = None,
+    ) -> None:
         """
         Initialize SecretsProvider.
 
         Args:
         ----
+            config_map: ConfigMap instance providing layer and namespace information.
+                       If None, will create one (auto-detects if in K8s).
             vault_dir: Path to vault directory. If None, will try to find it in:
                 1. KSTACK_VAULT_DIR environment variable
                 2. ${KSTACK_ROOT}/vault from KSTACK_ROOT env var
                 3. /home/lbrack/github/devops/kstack-lib/vault (development convention)
 
+        Example:
+        -------
+            # With explicit ConfigMap
+            from kstack_lib.config import ConfigMap, SecretsProvider
+            from kstack_lib.types import KStackLayer
+
+            cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
+            provider = SecretsProvider(config_map=cfg)
+
+            # Auto-detect (creates ConfigMap internally)
+            provider = SecretsProvider()
+
         """
+        self.config_map = config_map
+
         if vault_dir:
             self.vault_dir = vault_dir
         elif os.environ.get("KSTACK_VAULT_DIR"):
@@ -66,13 +91,16 @@ class SecretsProvider:
 
     def get_current_namespace(self) -> str | None:
         """
-        Get the current Kubernetes namespace if running in K8s.
+        Get the current Kubernetes namespace.
 
         Returns
         -------
-            Current namespace name, or None if not in K8s
+            Current namespace name, or None if not in K8s or no ConfigMap
 
         """
+        if self.config_map:
+            return self.config_map.namespace
+        # Fallback to direct detection
         namespace_file = Path("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
         if namespace_file.exists():
             return namespace_file.read_text().strip()
@@ -87,7 +115,9 @@ class SecretsProvider:
             True if running in K8s, False otherwise
 
         """
-        return self.get_current_namespace() is not None
+        from kstack_lib.config.configmap import ConfigMap
+
+        return ConfigMap.running_in_k8s()
 
     def _convert_key_to_env_var(self, key: str) -> str:
         """
@@ -305,7 +335,11 @@ class SecretsProvider:
             os.environ[env_var_name] = value
 
 
-def load_secrets_for_layer(layer: LayerName, auto_export: bool = True) -> dict[str, str]:
+def load_secrets_for_layer(
+    layer: KStackLayer | LayerName,
+    auto_export: bool = True,
+    config_map: Optional["ConfigMap"] = None,
+) -> dict[str, str]:
     """
     Load secrets for a layer and optionally export as environment variables.
 
@@ -313,8 +347,9 @@ def load_secrets_for_layer(layer: LayerName, auto_export: bool = True) -> dict[s
 
     Args:
     ----
-        layer: Layer name (layer0, layer1, layer2, layer3)
+        layer: KStackLayer enum or layer name string (layer0, layer1, layer2, layer3)
         auto_export: If True, automatically export secrets as environment variables
+        config_map: Optional ConfigMap instance. If not provided, one will be created.
 
     Returns:
     -------
@@ -322,7 +357,11 @@ def load_secrets_for_layer(layer: LayerName, auto_export: bool = True) -> dict[s
 
     Example:
     -------
-        # Load secrets for Layer 0 application
+        # Load secrets for Layer 0 application (using enum)
+        from kstack_lib.types import KStackLayer
+        secrets = load_secrets_for_layer(KStackLayer.LAYER_0_APPLICATIONS, auto_export=True)
+
+        # Or using string (backward compatible)
         secrets = load_secrets_for_layer("layer0", auto_export=True)
 
         # Now AUDIT_REDIS_CLIENT_HOST, REDIS_CLIENT_HOST, etc. are available in os.environ
@@ -330,8 +369,21 @@ def load_secrets_for_layer(layer: LayerName, auto_export: bool = True) -> dict[s
         config = RedisConfig(prefix="audit")
 
     """
-    provider = SecretsProvider()
-    secrets = provider.load_secrets(layer)
+    # Convert string layer name to LayerName if needed
+    if isinstance(layer, KStackLayer):
+        # Map KStackLayer enum to LayerName string
+        layer_map: dict[KStackLayer, LayerName] = {
+            KStackLayer.LAYER_0_APPLICATIONS: "layer0",
+            KStackLayer.LAYER_1_TENANT_INFRA: "layer1",
+            KStackLayer.LAYER_2_GLOBAL_SERVICES: "layer2",
+            KStackLayer.LAYER_3_GLOBAL_INFRA: "layer3",
+        }
+        layer_name = layer_map[layer]
+    else:
+        layer_name = layer
+
+    provider = SecretsProvider(config_map=config_map)
+    secrets = provider.load_secrets(layer_name)
 
     if auto_export:
         provider.export_as_env_vars(secrets, override_existing=False)

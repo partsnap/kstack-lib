@@ -71,6 +71,7 @@ rds = create_localstack_client('rds')
 LocalStack configuration is discovered from:
 
 1. **Local Development** - Vault file:
+
    ```yaml
    # ~/github/devops/partsnap-kstack/vault/dev/localstack.yaml
    development:
@@ -109,6 +110,7 @@ s3_test = create_localstack_client('s3', route='testing')
 ## Best Practices
 
 1. **Use context managers for async clients**:
+
    ```python
    s3 = create_localstack_client('s3')
    async with s3 as client:
@@ -116,6 +118,7 @@ s3_test = create_localstack_client('s3', route='testing')
    ```
 
 2. **Handle service errors**:
+
    ```python
    from botocore.exceptions import ClientError
 
@@ -129,6 +132,7 @@ s3_test = create_localstack_client('s3', route='testing')
    ```
 
 3. **Use resource helpers**:
+
    ```python
    import boto3
 

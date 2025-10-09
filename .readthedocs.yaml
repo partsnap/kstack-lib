@@ -24,7 +24,6 @@ build:
 mkdocs:
   configuration: mkdocs.yml
   fail_on_warning: false
-
 # Optionally build your docs in additional formats such as PDF and ePub
 # formats:
 #   - pdf

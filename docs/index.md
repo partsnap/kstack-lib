@@ -90,6 +90,7 @@ The library automatically discovers the active route from:
 Then reads configuration from:
 
 1. **Vault files** (local development):
+
    ```
    ~/github/devops/partsnap-kstack/vault/dev/redis-cloud.yaml
    ```
