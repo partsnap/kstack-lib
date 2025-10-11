@@ -239,11 +239,8 @@ from kstack_lib.cal import CloudContainer
 from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 
-# Configure which cloud provider to use
-cfg = ConfigMap(
-    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-    environment=KStackEnvironment.DEVELOPMENT,
-)
+# Configure layer (environment auto-detected from KSTACK_ROUTE)
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # Container automatically:
 # 1. Loads cloud credentials from vault (local) or K8s (cluster)

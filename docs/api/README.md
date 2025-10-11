@@ -167,11 +167,8 @@ result = run_command(["sleep", "10"], timeout=5)  # Raises TimeoutExpired
 from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 
-# Create configuration map
-cfg = ConfigMap(
-    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-    environment=KStackEnvironment.DEVELOPMENT,
-)
+# Create configuration map (environment auto-detected from KSTACK_ROUTE)
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # Access properties
 print(cfg.layer)         # KStackLayer.LAYER_3_GLOBAL_INFRA
@@ -219,11 +216,8 @@ from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 from pathlib import Path
 
-# Create configuration
-cfg = ConfigMap(
-    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-    environment=KStackEnvironment.DEVELOPMENT,
-)
+# Create configuration (environment auto-detected from KSTACK_ROUTE)
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # Use as context manager
 with CloudContainer(
@@ -466,10 +460,7 @@ from kstack_lib.cal import CloudContainer
 
 @pytest.mark.integration
 def test_s3_operations(localstack):  # localstack fixture auto-starts
-    cfg = ConfigMap(
-        layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-        environment=KStackEnvironment.DEVELOPMENT,
-    )
+    cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
     with CloudContainer(cfg) as cloud:
         storage = cloud.object_storage()

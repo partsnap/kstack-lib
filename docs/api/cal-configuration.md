@@ -429,11 +429,8 @@ from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 from pathlib import Path
 
-# 1. Create ConfigMap
-cfg = ConfigMap(
-    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-    environment=KStackEnvironment.DEVELOPMENT,
-)
+# 1. Create ConfigMap (environment auto-detected from KSTACK_ROUTE)
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # 2. CloudContainer loads configuration
 with CloudContainer(
@@ -772,7 +769,7 @@ Ensure ConfigMap has correct layer:
 ```python
 cfg = ConfigMap(
     layer=KStackLayer.LAYER_3_GLOBAL_INFRA,  # Must be set!
-    environment=KStackEnvironment.DEVELOPMENT,
+    # Environment auto-detected from KSTACK_ROUTE or ConfigMap
 )
 ```
 

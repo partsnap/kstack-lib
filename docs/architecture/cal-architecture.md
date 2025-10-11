@@ -301,11 +301,8 @@ from kstack_lib.cal import CloudContainer
 from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 
-# Configure which cloud provider and environment
-cfg = ConfigMap(
-    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-    environment=KStackEnvironment.DEVELOPMENT,
-)
+# Configure layer (environment auto-detected from KSTACK_ROUTE)
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # Context manager handles setup/teardown
 with CloudContainer(cfg, config_root=Path("/path/to/config")) as cloud:
@@ -572,10 +569,7 @@ Test with real LocalStack:
 def test_s3_operations(localstack):  # Auto-starts LocalStack
     from kstack_lib.cal import CloudContainer
 
-    cfg = ConfigMap(
-        layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-        environment=KStackEnvironment.DEVELOPMENT,
-    )
+    cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
     with CloudContainer(cfg) as cloud:
         storage = cloud.object_storage()

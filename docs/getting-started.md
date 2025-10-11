@@ -55,11 +55,8 @@ from kstack_lib.cal import CloudContainer
 from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 
-# Create configuration
-cfg = ConfigMap(
-    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
-    environment=KStackEnvironment.DEVELOPMENT,
-)
+# Create configuration (environment auto-detected from KSTACK_ROUTE or ConfigMap)
+cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # Use CloudContainer with context manager
 with CloudContainer(
