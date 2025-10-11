@@ -55,7 +55,7 @@ from kstack_lib.cal import CloudContainer
 from kstack_lib.config import ConfigMap
 from kstack_lib.types import KStackLayer, KStackEnvironment
 
-# Create configuration (environment auto-detected from KSTACK_ROUTE or ConfigMap)
+# Create configuration (environment auto-detected from .kstack.yaml locally, ConfigMap in-cluster)
 cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
 # Use CloudContainer with context manager
@@ -151,10 +151,21 @@ aws_secret_key = creds["aws_secret_access_key"]
 partsecrets reveal --team dev
 ```
 
-2. **Set environment variables** (optional, for testing):
+2. **Create `.kstack.yaml`** in your project root (environment configuration):
 
 ```bash
-export KSTACK_ENVIRONMENT=development
+# In partsnap-kstack directory
+kstack env set dev
+```
+
+This creates `.kstack.yaml`:
+
+```yaml
+# KStack Configuration
+# This file stores the active environment for your KStack deployment.
+# Change the environment using: kstack env set <environment>
+
+environment: dev
 ```
 
 3. **Run your service**:
