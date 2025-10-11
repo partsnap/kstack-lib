@@ -128,7 +128,7 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 58  # Cluster modules (93 lines) cannot be unit tested outside K8s
+fail_under = 82  # Cluster modules now testable with mockable base class guards
 
 [tool.ruff]
 target-version = "py312"

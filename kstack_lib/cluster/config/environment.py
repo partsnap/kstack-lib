@@ -10,12 +10,12 @@ from pathlib import Path
 from partsnap_logger.logging import psnap_get_logger
 
 from kstack_lib.any.exceptions import KStackConfigurationError
-from kstack_lib.cluster._guards import _enforce_cluster  # noqa: F401 - Import guard
+from kstack_lib.cluster._base import ClusterBase
 
 LOGGER = psnap_get_logger("kstack_lib.cluster.config.environment")
 
 
-class ClusterEnvironmentDetector:
+class ClusterEnvironmentDetector(ClusterBase):
     """
     Detects environment from Kubernetes namespace.
 
@@ -45,6 +45,7 @@ class ClusterEnvironmentDetector:
             namespace: Optional namespace (defaults to current namespace from service account)
 
         """
+        super().__init__()  # Verify cluster context
         self._namespace = namespace or self._get_current_namespace()
         LOGGER.debug(f"Initialized cluster environment detector: {self._namespace}")
 
@@ -117,7 +118,7 @@ class ClusterEnvironmentDetector:
         except ValueError:
             raise KStackConfigurationError(
                 f"Invalid namespace format: '{self._namespace}'\n" f"Layer number must be numeric, got '{parts[1]}'"
-            )
+            ) from None
 
         # Environment is everything after "layer-{num}-"
         environment = "-".join(parts[2:])
@@ -152,7 +153,7 @@ class ClusterEnvironmentDetector:
         return None
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         try:
             env = self.get_environment()
             return f"ClusterEnvironmentDetector(namespace='{self._namespace}', environment='{env}')"

@@ -267,23 +267,21 @@ class KStackVault:
         """
         search_path = self.get_layer_path(layer) if layer else self.path
 
-        for file_path in search_path.rglob("secret.*"):
-            yield file_path
+        yield from search_path.rglob("secret.*")
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         status = "encrypted" if self.is_encrypted() else "decrypted"
         return f"KStackVault(environment='{self.environment}', path='{self.path}', status='{status}')"
 
-    def __enter__(self):
+    def __enter__(self) -> "KStackVault":
         """Context manager entry - decrypt vault."""
         if self.is_encrypted():
             if not self.decrypt():
                 raise RuntimeError(f"Failed to decrypt vault: {self.path}")
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: type[BaseException] | None, exc_val: BaseException | None, exc_tb: object) -> None:
         """Context manager exit - re-encrypt vault."""
         if not self.is_encrypted():
             self.encrypt()
-        return False  # Don't suppress exceptions

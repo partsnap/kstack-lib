@@ -77,7 +77,7 @@ def _resolve_template_variables(value: str, context: dict[str, Any]) -> str:
             for part in parts:
                 current = current[part]
         except (KeyError, TypeError):
-            raise ConfigurationError(
+            raise ConfigurationError(  # noqa: B904
                 f"Template variable '{var_path}' not found in context. " f"Available: {list(context.keys())}"
             )
 
@@ -101,7 +101,7 @@ def _resolve_dict_templates(data: dict[str, Any], context: dict[str, Any]) -> di
         Dictionary with all template variables resolved
 
     """
-    result = {}
+    result: dict[str, Any] = {}
     for key, value in data.items():
         if isinstance(value, str):
             result[key] = _resolve_template_variables(value, context)
@@ -149,12 +149,12 @@ def load_environment_config(environment: KStackEnvironment, config_dir: Path | N
         with open(config_file) as f:
             data = yaml.safe_load(f)
     except Exception as e:
-        raise ConfigurationError(f"Failed to parse {config_file}: {e}")
+        raise ConfigurationError(f"Failed to parse {config_file}: {e}")  # noqa: B904
 
     try:
         return EnvironmentConfig(**data)
     except Exception as e:
-        raise ConfigurationError(f"Invalid environment configuration in {config_file}: {e}")
+        raise ConfigurationError(f"Invalid environment configuration in {config_file}: {e}")  # noqa: B904
 
 
 def load_provider_config(
@@ -200,7 +200,7 @@ def load_provider_config(
         with open(config_file) as f:
             raw_data = yaml.safe_load(f)
     except Exception as e:
-        raise ConfigurationError(f"Failed to parse {config_file}: {e}")
+        raise ConfigurationError(f"Failed to parse {config_file}: {e}")  # noqa: B904
 
     # Template variable context
     context = {
@@ -216,13 +216,13 @@ def load_provider_config(
     try:
         resolved_data = _resolve_dict_templates(raw_data, context)
     except ConfigurationError as e:
-        raise ConfigurationError(f"Template resolution failed in {config_file}: {e}")
+        raise ConfigurationError(f"Template resolution failed in {config_file}: {e}")  # noqa: B904
 
     # Validate with Pydantic
     try:
         return ProviderConfig(**resolved_data)
     except Exception as e:
-        raise ConfigurationError(f"Invalid provider configuration in {config_file}: {e}")
+        raise ConfigurationError(f"Invalid provider configuration in {config_file}: {e}")  # noqa: B904
 
 
 def load_cloud_credentials(
@@ -288,12 +288,12 @@ def load_cloud_credentials(
         with open(creds_file) as f:
             data = yaml.safe_load(f)
     except Exception as e:
-        raise ConfigurationError(f"Failed to parse {creds_file}: {e}")
+        raise ConfigurationError(f"Failed to parse {creds_file}: {e}")  # noqa: B904
 
     try:
         return CloudCredentials(**data)
     except Exception as e:
-        raise ConfigurationError(f"Invalid cloud credentials in {creds_file}: {e}")
+        raise ConfigurationError(f"Invalid cloud credentials in {creds_file}: {e}")  # noqa: B904
 
 
 def get_cloud_provider(

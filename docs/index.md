@@ -23,22 +23,34 @@ uv add kstack-lib
 ### Basic Usage
 
 ```python
-from kstack_lib import get_environment_detector, get_cloud_storage_adapter
+from pathlib import Path
+from kstack_lib.any.container import get_environment_detector
+from kstack_lib.cal import CloudContainer
+from kstack_lib.config import ConfigMap
+from kstack_lib.types import KStackLayer, KStackEnvironment
 
 # Automatically detects environment (dev/staging/production)
 detector = get_environment_detector()
 environment = detector.get_environment()
 
-# Get cloud storage adapter (S3 in cluster, LocalStack locally)
-storage = get_cloud_storage_adapter(service="s3")
+# Create configuration and cloud container
+cfg = ConfigMap(
+    layer=KStackLayer.LAYER_3_GLOBAL_INFRA,
+    environment=KStackEnvironment.DEVELOPMENT,
+)
 
-# Upload a file
-with open("data.json", "rb") as f:
-    storage.upload_file(
-        bucket="my-bucket",
-        key="data/file.json",
-        body=f
-    )
+# Get cloud storage (S3 in cluster, LocalStack locally)
+with CloudContainer(cfg, config_root=Path("./config"), vault_root=Path("./vault")) as cloud:
+    storage = cloud.object_storage()
+
+    # Upload a file
+    with open("data.json", "rb") as f:
+        storage.upload_object(
+            bucket="my-bucket",
+            key="data/file.json",
+            file_obj=f,
+            content_type="application/json"
+        )
 ```
 
 ## Architecture Overview

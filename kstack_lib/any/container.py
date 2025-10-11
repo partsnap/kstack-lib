@@ -8,6 +8,12 @@ Uses dependency-injector for clean DI with singletons.
 from dependency_injector import containers, providers
 
 from kstack_lib.any.context import is_in_cluster
+from kstack_lib.any.protocols import (
+    CloudSessionFactory,
+    EnvironmentDetector,
+    SecretsProvider,
+    VaultManager,
+)
 
 
 def _context_selector() -> str:
@@ -111,7 +117,7 @@ class KStackIoCContainer(containers.DeclarativeContainer):
 container = KStackIoCContainer()
 
 
-def get_environment_detector():
+def get_environment_detector() -> EnvironmentDetector:
     """
     Get environment detector (singleton).
 
@@ -132,7 +138,7 @@ def get_environment_detector():
     return container.environment_detector()
 
 
-def get_secrets_provider():
+def get_secrets_provider() -> SecretsProvider:
     """
     Get secrets provider (singleton).
 
@@ -153,7 +159,7 @@ def get_secrets_provider():
     return container.secrets_provider()
 
 
-def get_vault_manager():
+def get_vault_manager() -> VaultManager:
     """
     Get vault manager (singleton, LOCAL-ONLY).
 
@@ -178,7 +184,7 @@ def get_vault_manager():
     return container.vault_manager()
 
 
-def get_cloud_session_factory():
+def get_cloud_session_factory() -> CloudSessionFactory:
     """
     Get cloud session factory (singleton).
 

@@ -117,5 +117,5 @@ class LocalCredentialsProvider:
         return service_creds
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         return f"LocalCredentialsProvider(vault={self._vault})"

@@ -8,7 +8,7 @@ All protocols follow PEP 544 (Structural Subtyping / Protocol).
 """
 
 from pathlib import Path
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -222,7 +222,7 @@ class CloudSessionFactory(Protocol):
 
     """
 
-    def create_session(self, service: str, layer: str, environment: str):
+    def create_session(self, service: str, layer: str, environment: str) -> Any:
         """
         Create a synchronous cloud session (e.g., boto3.Session).
 
@@ -245,7 +245,7 @@ class CloudSessionFactory(Protocol):
         """
         ...
 
-    def create_async_session(self, service: str, layer: str, environment: str):
+    def create_async_session(self, service: str, layer: str, environment: str) -> Any:
         """
         Create an asynchronous cloud session (e.g., aioboto3.Session).
 

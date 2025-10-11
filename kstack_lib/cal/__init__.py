@@ -37,6 +37,7 @@ Example:
 
 from kstack_lib.cal.container import CloudContainer
 from kstack_lib.cal.factory import UnsupportedProviderError, create_cloud_provider
+from kstack_lib.cal.ioc import CALIoCContainer, create_cal_container, get_cal_container, reset_cal_container
 from kstack_lib.cal.protocols import (
     CloudProviderProtocol,
     ObjectStorageProtocol,
@@ -52,4 +53,8 @@ __all__ = [
     "create_cloud_provider",
     "UnsupportedProviderError",
     "CloudContainer",
+    "CALIoCContainer",
+    "create_cal_container",
+    "get_cal_container",
+    "reset_cal_container",
 ]

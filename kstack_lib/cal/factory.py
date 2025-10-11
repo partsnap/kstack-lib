@@ -98,6 +98,7 @@ def create_cloud_provider(
 
     # Select adapter based on provider family
     if provider_config.provider_family == ProviderFamily.AWS:
+        # AWS family includes: LocalStack, AWS, DigitalOcean Spaces, MinIO
         return AWSFamilyProvider(
             config=provider_config,
             credentials=credentials,
@@ -110,16 +111,11 @@ def create_cloud_provider(
         raise UnsupportedProviderError(
             "Azure provider family not yet implemented. " "Coming in a future phase of the cloud abstraction layer."
         )
-    elif provider_config.provider_family == ProviderFamily.DIGITALOCEAN:
-        # DigitalOcean Spaces uses S3 API, so it uses AWS family adapter
-        return AWSFamilyProvider(
-            config=provider_config,
-            credentials=credentials,
-        )
     else:
         raise UnsupportedProviderError(
             f"Unknown provider family: {provider_config.provider_family}. "
-            f"Supported families: AWS, DigitalOcean (more coming soon)"
+            f"Supported families: AWS (includes LocalStack, DigitalOcean, MinIO), "
+            f"GCP (coming soon), Azure (coming soon)"
         )
 
 
@@ -155,14 +151,14 @@ def create_cloud_provider_from_config(
 
     """
     if provider_config.provider_family == ProviderFamily.AWS:
+        # AWS family includes: LocalStack, AWS, DigitalOcean Spaces, MinIO
         return AWSFamilyProvider(
             config=provider_config,
             credentials=credentials,
         )
-    elif provider_config.provider_family == ProviderFamily.DIGITALOCEAN:
-        return AWSFamilyProvider(
-            config=provider_config,
-            credentials=credentials,
-        )
+    elif provider_config.provider_family == ProviderFamily.GCP:
+        raise UnsupportedProviderError("GCP provider family not yet implemented")
+    elif provider_config.provider_family == ProviderFamily.AZURE:
+        raise UnsupportedProviderError("Azure provider family not yet implemented")
     else:
         raise UnsupportedProviderError(f"Provider family {provider_config.provider_family} not yet supported")

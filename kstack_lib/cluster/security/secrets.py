@@ -12,12 +12,12 @@ from partsnap_logger.logging import psnap_get_logger
 
 from kstack_lib.any.exceptions import KStackConfigurationError, KStackServiceNotFoundError
 from kstack_lib.any.utils import run_command
-from kstack_lib.cluster._guards import _enforce_cluster  # noqa: F401 - Import guard
+from kstack_lib.cluster._base import ClusterBase
 
 LOGGER = psnap_get_logger("kstack_lib.cluster.security.secrets")
 
 
-class ClusterSecretsProvider:
+class ClusterSecretsProvider(ClusterBase):
     """
     Provides credentials from Kubernetes Secret Manager.
 
@@ -43,6 +43,7 @@ class ClusterSecretsProvider:
             namespace: Optional namespace (defaults to current namespace from env)
 
         """
+        super().__init__()  # Verify cluster context
         self._namespace = namespace or self._get_current_namespace()
         LOGGER.debug(f"Initialized cluster secrets provider in namespace: {self._namespace}")
 
@@ -66,7 +67,7 @@ class ClusterSecretsProvider:
                 LOGGER.debug(f"Detected namespace from service account: {namespace}")
                 return namespace
         except FileNotFoundError:
-            raise KStackConfigurationError(
+            raise KStackConfigurationError(  # noqa: B904
                 f"Cannot read namespace from {namespace_file}\n"
                 "This should not happen in a properly configured K8s pod."
             )
@@ -121,7 +122,7 @@ class ClusterSecretsProvider:
             )
         except subprocess.CalledProcessError as e:
             if "NotFound" in str(e.stderr):
-                raise KStackServiceNotFoundError(
+                raise KStackServiceNotFoundError(  # noqa: B904
                     f"K8s secret not found: {secret_name} in namespace {self._namespace}\n"
                     f"Service: {service}, Layer: {layer}, Environment: {environment}"
                 )
@@ -159,5 +160,5 @@ class ClusterSecretsProvider:
         return credentials
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         return f"ClusterSecretsProvider(namespace='{self._namespace}')"

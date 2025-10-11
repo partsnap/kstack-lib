@@ -242,7 +242,7 @@ class KStackClusterConfig:
         return KStackEnvironment.from_string(self.environment)
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         return f"KStackClusterConfig(environment='{self.environment}', " f"in_cluster={self.is_in_cluster})"
 
 

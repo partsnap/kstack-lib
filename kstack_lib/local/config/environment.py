@@ -174,7 +174,7 @@ class LocalEnvironmentDetector:
         return None
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         try:
             env = self.get_environment()
             return f"LocalEnvironmentDetector(environment='{env}', root='{self._project_root}')"

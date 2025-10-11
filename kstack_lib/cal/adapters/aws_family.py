@@ -337,7 +337,7 @@ class AWSFamilyProvider:
 
         """
         # Get service-specific configuration
-        service_config = self._config.services.get(service, {})
+        service_config: Any = self._config.services.get(service, {})
 
         # Build client configuration
         client_config = Config(

@@ -113,7 +113,7 @@ def test_object_operations(localstack):
                     objects = storage.list_objects(bucket)
                     for obj in objects:
                         storage.delete_object(bucket, obj["Key"])
-                except:
+                except Exception:  # noqa: S110
                     pass
             else:
                 raise

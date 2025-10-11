@@ -6,6 +6,7 @@ This module provides a dependency injection container for cloud services that:
 - Integrates with ConfigMap for automatic configuration
 - Provides lazy initialization of cloud clients
 - Handles context management and resource cleanup
+- Uses IoC pattern for consistent dependency injection
 
 Usage:
 ------
@@ -35,7 +36,7 @@ Usage:
 
 from typing import Any
 
-from kstack_lib.cal.factory import create_cloud_provider
+from kstack_lib.cal.ioc import create_cal_container
 from kstack_lib.cal.protocols import (
     CloudProviderProtocol,
     ObjectStorageProtocol,
@@ -50,14 +51,15 @@ class CloudContainer:
     Dependency injection container for cloud services.
 
     This container manages the lifecycle of cloud provider instances and
-    provides easy access to cloud services. It integrates with ConfigMap
-    to automatically load configuration and credentials.
+    provides easy access to cloud services. It uses the CAL IoC container
+    internally for consistent dependency injection patterns.
 
     Features:
     - Lazy initialization (providers created on first use)
     - Service caching (single provider instance per service)
     - Automatic cleanup via context managers
     - ConfigMap integration for seamless configuration
+    - IoC-based provider factories (testable/mockable)
 
     Example:
     -------
@@ -98,12 +100,20 @@ class CloudContainer:
         self._config = config
         self._default_provider = default_provider
         self._factory_kwargs = factory_kwargs
+
+        # Create IoC container for dependency injection
+        self._ioc = create_cal_container(config, **factory_kwargs)
+
+        # Cache for cloud providers (one per service)
         self._providers: dict[str, CloudProviderProtocol] = {}
         self._closed = False
 
     def _get_provider(self, service: str, provider: str | None = None) -> CloudProviderProtocol:
         """
         Get or create a provider for the specified service.
+
+        This method uses the IoC container's provider factory for creating
+        providers, enabling testability and consistent DI patterns.
 
         Args:
         ----
@@ -125,8 +135,9 @@ class CloudContainer:
         if provider_key in self._providers:
             return self._providers[provider_key]
 
-        # Create new provider
-        cloud_provider = create_cloud_provider(
+        # Create new provider using IoC container's factory
+        factory = self._ioc.provider_factory()
+        cloud_provider = factory(
             config=self._config,
             service=service,
             override_provider=provider or self._default_provider,

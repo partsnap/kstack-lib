@@ -5,6 +5,7 @@ Creates cloud provider sessions auto-configured from credentials.
 Works in both cluster and local contexts via DI.
 """
 
+from collections.abc import Callable
 from typing import Any
 
 from partsnap_logger.logging import psnap_get_logger
@@ -39,7 +40,7 @@ class Boto3SessionFactory:
 
     """
 
-    def __init__(self, secrets_provider):
+    def __init__(self, secrets_provider: Any) -> None:
         """
         Initialize session factory.
 
@@ -50,6 +51,63 @@ class Boto3SessionFactory:
         """
         self._secrets = secrets_provider
         LOGGER.debug(f"Initialized Boto3SessionFactory with {secrets_provider}")
+
+    def _create_session_impl(
+        self,
+        service: str,
+        layer: str,
+        environment: str,
+        session_factory: Callable[..., Any],
+        library_name: str,
+    ) -> Any:
+        """
+        Create session using provided factory (DRY implementation).
+
+        Args:
+        ----
+            service: Service name (e.g., "s3", "dynamodb")
+            layer: Layer identifier (e.g., "layer3")
+            environment: Environment name (e.g., "dev", "production")
+            session_factory: Callable that creates the session (boto3.Session or aioboto3.Session)
+            library_name: Name of the library for logging ("boto3" or "aioboto3")
+
+        Returns:
+        -------
+            Configured session (boto3.Session or aioboto3.Session)
+
+        Raises:
+        ------
+            KStackConfigurationError: If credentials missing
+
+        """
+        # Get credentials from provider (vault or K8s secrets)
+        creds = self._secrets.get_credentials(service, layer, environment)
+
+        # Extract AWS credentials
+        aws_access_key_id = creds.get("aws_access_key_id")
+        aws_secret_access_key = creds.get("aws_secret_access_key")
+        region_name = creds.get("aws_region", "us-east-1")
+        endpoint_url = creds.get("endpoint_url")  # For LocalStack
+
+        if not aws_access_key_id or not aws_secret_access_key:
+            raise KStackConfigurationError(
+                f"Missing AWS credentials for {service} in {layer}/{environment}\n"
+                f"Required: aws_access_key_id, aws_secret_access_key"
+            )
+
+        # Create session using the provided factory
+        session = session_factory(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            region_name=region_name,
+        )
+
+        LOGGER.debug(
+            f"Created {library_name} session for {service} in {layer}/{environment} "
+            f"(region: {region_name}, endpoint: {endpoint_url or 'default'})"
+        )
+
+        return session
 
     def create_session(self, service: str, layer: str, environment: str) -> Any:
         """
@@ -72,37 +130,10 @@ class Boto3SessionFactory:
         """
         try:
             import boto3
-        except ImportError:
-            raise KStackConfigurationError("boto3 not installed. Install with: uv add boto3")
+        except ImportError as e:
+            raise KStackConfigurationError("boto3 not installed. Install with: uv add boto3") from e
 
-        # Get credentials from provider (vault or K8s secrets)
-        creds = self._secrets.get_credentials(service, layer, environment)
-
-        # Extract AWS credentials
-        aws_access_key_id = creds.get("aws_access_key_id")
-        aws_secret_access_key = creds.get("aws_secret_access_key")
-        region_name = creds.get("aws_region", "us-east-1")
-        endpoint_url = creds.get("endpoint_url")  # For LocalStack
-
-        if not aws_access_key_id or not aws_secret_access_key:
-            raise KStackConfigurationError(
-                f"Missing AWS credentials for {service} in {layer}/{environment}\n"
-                f"Required: aws_access_key_id, aws_secret_access_key"
-            )
-
-        # Create session
-        session = boto3.Session(
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            region_name=region_name,
-        )
-
-        LOGGER.debug(
-            f"Created boto3 session for {service} in {layer}/{environment} "
-            f"(region: {region_name}, endpoint: {endpoint_url or 'default'})"
-        )
-
-        return session
+        return self._create_session_impl(service, layer, environment, boto3.Session, "boto3")
 
     def create_async_session(self, service: str, layer: str, environment: str) -> Any:
         """
@@ -125,38 +156,11 @@ class Boto3SessionFactory:
         """
         try:
             import aioboto3
-        except ImportError:
-            raise KStackConfigurationError("aioboto3 not installed. Install with: uv add aioboto3")
+        except ImportError as e:
+            raise KStackConfigurationError("aioboto3 not installed. Install with: uv add aioboto3") from e
 
-        # Get credentials from provider (vault or K8s secrets)
-        creds = self._secrets.get_credentials(service, layer, environment)
-
-        # Extract AWS credentials
-        aws_access_key_id = creds.get("aws_access_key_id")
-        aws_secret_access_key = creds.get("aws_secret_access_key")
-        region_name = creds.get("aws_region", "us-east-1")
-        endpoint_url = creds.get("endpoint_url")  # For LocalStack
-
-        if not aws_access_key_id or not aws_secret_access_key:
-            raise KStackConfigurationError(
-                f"Missing AWS credentials for {service} in {layer}/{environment}\n"
-                f"Required: aws_access_key_id, aws_secret_access_key"
-            )
-
-        # Create async session
-        session = aioboto3.Session(
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            region_name=region_name,
-        )
-
-        LOGGER.debug(
-            f"Created aioboto3 session for {service} in {layer}/{environment} "
-            f"(region: {region_name}, endpoint: {endpoint_url or 'default'})"
-        )
-
-        return session
+        return self._create_session_impl(service, layer, environment, aioboto3.Session, "aioboto3")
 
     def __repr__(self) -> str:
-        """String representation."""
+        """Return string representation."""
         return f"Boto3SessionFactory(secrets={self._secrets})"

@@ -266,9 +266,53 @@ with CloudContainer(cfg) as cloud:
 
 **Purpose:** Prevent accidental misuse of context-specific code.
 
-#### How Guards Work
+#### How Guards Work - Base Class Pattern
 
-Guards execute **at module import time**, before any code runs:
+**Cluster modules** use a mockable base class for import guards:
+
+```python
+# kstack_lib/cluster/_base.py
+from functools import lru_cache
+from kstack_lib.any.context import is_in_cluster
+from kstack_lib.any.exceptions import KStackEnvironmentError
+
+class ClusterBase:
+    """Base class for all cluster-only components.
+
+    Provides a mockable guard method that can be patched in tests.
+    """
+
+    @classmethod
+    @lru_cache(maxsize=1)
+    def _check_cluster_context(cls) -> None:
+        """Verify running in cluster context.
+
+        Raises KStackEnvironmentError if not in Kubernetes cluster.
+        Can be mocked in tests using @patch.object(ClusterBase, '_check_cluster_context')
+        """
+        if not is_in_cluster():
+            raise KStackEnvironmentError(
+                "Cannot use cluster component outside Kubernetes cluster."
+            )
+
+    def __init__(self):
+        """Initialize cluster component and verify context."""
+        self._check_cluster_context()
+```
+
+Cluster components inherit from this base:
+
+```python
+# kstack_lib/cluster/config/environment.py
+from kstack_lib.cluster._base import ClusterBase
+
+class ClusterEnvironmentDetector(ClusterBase):
+    def __init__(self, namespace: str | None = None):
+        super().__init__()  # Invokes guard check
+        # Rest of initialization...
+```
+
+**Local modules** still use module-level guards (for backward compatibility):
 
 ```python
 # kstack_lib/local/_guards.py
@@ -282,20 +326,13 @@ if is_in_cluster():
     )
 ```
 
-Every module in `local/` or `cluster/` imports its guard:
-
-```python
-# kstack_lib/local/security/vault.py
-from kstack_lib.local._guards import _enforce_local  # noqa: F401 - Import guard
-
-# Rest of module code...
-```
-
 #### Benefits
 
-1. **Fail-fast** - Errors caught at import time, not runtime
-2. **Explicit** - Clear error messages guide developers
-3. **Safety** - Impossible to accidentally use wrong implementation
+1. **Fail-fast** - Errors caught at instantiation time
+2. **Testable** - Guards can be mocked with `@patch.object(ClusterBase, '_check_cluster_context')`
+3. **Cached** - `@lru_cache` ensures guard only runs once
+4. **Explicit** - Clear error messages guide developers
+5. **Safety** - Impossible to accidentally use wrong implementation
 
 #### Context Detection
 
@@ -466,8 +503,42 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 ```
 
+## API Documentation
+
+For practical usage and code examples, see:
+
+- **[API Reference](../api/README.md)** - Complete API documentation with examples
+
+  - Container and Dependency Injection patterns
+  - Service interfaces and protocols
+  - Testing patterns and best practices
+
+- **[CAL Configuration Guide](../api/cal-configuration.md)** - Configuration schemas and examples
+  - Cloud credentials management
+  - Provider configuration
+  - Environment configuration
+  - Complete configuration examples
+
 ## Further Reading
 
-- [IoC Container Deep Dive](./ioc-container.md) - Detailed container architecture
-- [CAL Architecture](./cal-architecture.md) - Cloud Abstraction Layer internals
-- [Testing Guide](../development/testing.md) - Comprehensive testing strategies
+### Architecture Deep Dives
+
+- **[IoC Container Deep Dive](./ioc-container.md)** - Detailed container architecture
+
+  - Provider types (Singleton, Factory, Callable)
+  - Lazy loading mechanics
+  - Dependency graph
+  - Testing with overrides
+
+- **[CAL Architecture](./cal-architecture.md)** - Cloud Abstraction Layer internals
+  - Provider families (AWS, Azure, GCP)
+  - Service protocols
+  - Adding new services and providers
+  - Async support (future)
+
+### Development Guides
+
+- **[Testing Guide](../development/testing.md)** - Comprehensive testing strategies
+  - Unit tests with mocks
+  - Integration tests with LocalStack
+  - Protocol conformance tests

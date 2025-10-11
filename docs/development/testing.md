@@ -100,32 +100,47 @@ uv run pytest tests/integration/ -v
 
 ### Cluster Tests
 
-Cluster tests are automatically skipped when not running in Kubernetes:
+Cluster tests use mockable base class guards to enable testing outside Kubernetes:
 
 ```python
 # tests/cluster/test_secrets.py
-import pytest
-from kstack_lib.any.context import is_in_cluster
+from unittest.mock import patch
+from kstack_lib.cluster._base import ClusterBase
 
-# Skip all tests in this module if not in cluster
-pytestmark = pytest.mark.skipif(
-    not is_in_cluster(),
-    reason="Cluster tests can only run inside Kubernetes cluster"
-)
+class TestClusterSecretsProvider:
+    """Test ClusterSecretsProvider with mocked dependencies."""
 
-def test_cluster_secrets():
-    """This test only runs inside K8s."""
-    from kstack_lib.cluster.security.secrets import ClusterSecretsProvider
-    provider = ClusterSecretsProvider()
-    # ...
+    @patch.object(ClusterBase, "_check_cluster_context")
+    @patch("kstack_lib.cluster.security.secrets.run_command")
+    def test_get_credentials_success(self, mock_run, mock_guard):
+        """Test successful credential retrieval."""
+        from kstack_lib.cluster.security.secrets import ClusterSecretsProvider
+
+        # Mock kubectl output
+        secret_data = {"data": {"key": base64.b64encode(b"value").decode()}}
+        mock_run.return_value = MagicMock(stdout=json.dumps(secret_data))
+
+        provider = ClusterSecretsProvider(namespace="layer-3-production")
+        creds = provider.get_credentials("s3", "layer3", "production")
+
+        assert creds["key"] == "value"
 ```
 
-When running locally:
+**Key Pattern:** Mock `ClusterBase._check_cluster_context()` to bypass the cluster guard:
+
+- Cluster components inherit from `ClusterBase`
+- `ClusterBase.__init__()` calls `_check_cluster_context()`
+- Tests mock this method with `@patch.object(ClusterBase, '_check_cluster_context')`
+- This allows full testing of cluster logic outside Kubernetes
+
+Running cluster tests locally:
 
 ```bash
 $ uv run pytest tests/cluster/ -v
-tests/cluster/test_environment.py::test_init SKIPPED (Cluster tests can only run inside Kubernetes cluster)
-tests/cluster/test_secrets.py::test_init SKIPPED (Cluster tests can only run inside Kubernetes cluster)
+tests/cluster/test_environment.py::test_init_reads_current_namespace PASSED
+tests/cluster/test_environment.py::test_get_environment_production PASSED
+tests/cluster/test_secrets.py::test_get_credentials_success PASSED
+# All 26 cluster tests pass!
 ```
 
 ## Mocking
