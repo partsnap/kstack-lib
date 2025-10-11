@@ -133,7 +133,7 @@ class TestKStackVault:
         mock_run_command.assert_called_once()
         args, kwargs = mock_run_command.call_args
         assert args[0] == ["uv", "run", "partsecrets", "reveal", "--team", "test-team"]
-        assert kwargs["env"]["PARTSECRETS_VAULT_PATH"] == str(vault.path)
+        assert kwargs["env"]["PARTSECRETS_VAULT_PATH"] == str(vault._vault_root)
 
     @patch("kstack_lib.local.security.vault.run_command")
     def test_decrypt_returns_false_on_error(self, mock_run_command, vault_structure):
@@ -160,7 +160,7 @@ class TestKStackVault:
         mock_run_command.assert_called_once()
         args, kwargs = mock_run_command.call_args
         assert args[0] == ["uv", "run", "partsecrets", "hide", "--team", "test-team"]
-        assert kwargs["env"]["PARTSECRETS_VAULT_PATH"] == str(vault.path)
+        assert kwargs["env"]["PARTSECRETS_VAULT_PATH"] == str(vault._vault_root)
 
     @patch("kstack_lib.local.security.vault.run_command")
     def test_encrypt_returns_false_on_error(self, mock_run_command, vault_structure):

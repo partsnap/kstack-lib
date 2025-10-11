@@ -150,9 +150,10 @@ class KStackVault:
         LOGGER.info(f"Decrypting vault: {self.path}")
 
         try:
+            # partsecrets expects the vault root, not the environment subdirectory
             run_command(
                 ["uv", "run", "partsecrets", "reveal", "--team", team],
-                env={"PARTSECRETS_VAULT_PATH": str(self.path), "TMPDIR": "/tmp"},
+                env={"PARTSECRETS_VAULT_PATH": str(self._vault_root), "TMPDIR": "/tmp"},
                 timeout=30,
             )
             LOGGER.info("✓ Vault decrypted successfully")
@@ -174,12 +175,17 @@ class KStackVault:
             True if successful, False otherwise
 
         """
+        if self.is_encrypted():
+            LOGGER.info(f"Vault already encrypted: {self.path}")
+            return True
+
         LOGGER.info(f"Encrypting vault: {self.path}")
 
         try:
+            # partsecrets expects the vault root, not the environment subdirectory
             run_command(
                 ["uv", "run", "partsecrets", "hide", "--team", team],
-                env={"PARTSECRETS_VAULT_PATH": str(self.path), "TMPDIR": "/tmp"},
+                env={"PARTSECRETS_VAULT_PATH": str(self._vault_root), "TMPDIR": "/tmp"},
                 timeout=30,
             )
             LOGGER.info("✓ Vault encrypted successfully")
