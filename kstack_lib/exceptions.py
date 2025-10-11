@@ -1,67 +1,33 @@
 """
-KStack exception classes.
+Exception definitions for KStack (backward compatibility shim).
 
-This module defines custom exceptions for KStack to avoid masking built-in Python errors
-and to provide clear, specific error handling for different failure scenarios.
+This module re-exports exceptions from kstack_lib.any.exceptions for backward compatibility.
+New code should import directly from kstack_lib.any.exceptions.
 """
 
+# Re-export with old names for backward compatibility
+from kstack_lib.any.exceptions import (
+    KStackConfigurationError as ConfigurationError,
+)
+from kstack_lib.any.exceptions import (
+    KStackEnvironmentError,
+    KStackError,
+)
+from kstack_lib.any.exceptions import (
+    KStackLayerAccessError as LayerAccessError,
+)
+from kstack_lib.any.exceptions import (
+    KStackRouteError as RouteError,
+)
+from kstack_lib.any.exceptions import (
+    KStackServiceNotFoundError as ServiceNotFoundError,
+)
 
-class KStackError(Exception):
-    """
-    Base exception for all KStack errors.
-
-    All KStack exceptions inherit from this, allowing users to catch all KStack-specific
-    errors with a single except clause while not catching unrelated Python errors.
-    """
-
-    pass
-
-
-class LayerAccessError(KStackError):
-    """
-    Raised when trying to access a service from an invalid layer.
-
-    Example:
-    -------
-        Trying to access Redis (Layer 3 service) from Layer 0:
-        >>> cfg = ConfigMap(layer=KStackLayer.LAYER_0_APPLICATIONS)
-        >>> get_redis_config(cfg, KStackRedisDatabase.PART_RAW)
-        LayerAccessError: Redis databases are only available in Layer 3...
-
-    """
-
-    pass
-
-
-class ServiceNotFoundError(KStackError):
-    """
-    Raised when a requested service configuration cannot be found.
-
-    This indicates that the service exists and the layer is correct, but the
-    configuration (vault file, K8s secret, etc.) is missing or inaccessible.
-
-    Example:
-    -------
-        Redis service exists in Layer 3, but no config found for the route:
-        >>> get_redis_config(cfg, KStackRedisDatabase.PART_RAW)
-        ServiceNotFoundError: Redis configuration not found for route 'development'...
-
-    """
-
-    pass
-
-
-class ConfigurationError(KStackError):
-    """
-    Raised when there is an error in KStack configuration.
-
-    This includes malformed vault files, invalid layer definitions, etc.
-    """
-
-    pass
-
-
-class RouteError(KStackError):
-    """Raised when there is an error with route configuration or detection."""
-
-    pass
+__all__ = [
+    "KStackError",
+    "LayerAccessError",
+    "ServiceNotFoundError",
+    "ConfigurationError",
+    "RouteError",
+    "KStackEnvironmentError",
+]

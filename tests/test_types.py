@@ -2,66 +2,71 @@
 
 import pytest
 
-from kstack_lib.types import KStackLayer, KStackRoute, LayerChoice
+from kstack_lib.types import KStackEnvironment, KStackLayer, LayerChoice
 
 
-class TestKStackRoute:
-    """Tests for KStackRoute enum."""
+class TestKStackEnvironment:
+    """Tests for KStackEnvironment enum."""
 
-    def test_route_values(self):
-        """Test that route enum values are correct."""
-        assert KStackRoute.DEVELOPMENT.value == "development"
-        assert KStackRoute.TESTING.value == "testing"
-        assert KStackRoute.STAGING.value == "staging"
-        assert KStackRoute.SCRATCH.value == "scratch"
-        assert KStackRoute.DATA_COLLECTION.value == "data-collection"
+    def test_environment_values(self):
+        """Test that environment enum values are correct."""
+        assert KStackEnvironment.DEVELOPMENT.value == "dev"
+        assert KStackEnvironment.TESTING.value == "test"
+        assert KStackEnvironment.STAGING.value == "staging"
+        assert KStackEnvironment.PRODUCTION.value == "prod"
+        assert KStackEnvironment.SCRATCH.value == "scratch"
+        assert KStackEnvironment.DATA_COLLECTION.value == "data-collection"
 
     def test_from_string_lowercase(self):
         """Test from_string with lowercase input."""
-        assert KStackRoute.from_string("development") == KStackRoute.DEVELOPMENT
-        assert KStackRoute.from_string("testing") == KStackRoute.TESTING
-        assert KStackRoute.from_string("staging") == KStackRoute.STAGING
-        assert KStackRoute.from_string("scratch") == KStackRoute.SCRATCH
-        assert KStackRoute.from_string("data-collection") == KStackRoute.DATA_COLLECTION
+        assert KStackEnvironment.from_string("dev") == KStackEnvironment.DEVELOPMENT
+        assert KStackEnvironment.from_string("test") == KStackEnvironment.TESTING
+        assert KStackEnvironment.from_string("staging") == KStackEnvironment.STAGING
+        assert KStackEnvironment.from_string("prod") == KStackEnvironment.PRODUCTION
+        assert KStackEnvironment.from_string("scratch") == KStackEnvironment.SCRATCH
+        assert KStackEnvironment.from_string("data-collection") == KStackEnvironment.DATA_COLLECTION
 
     def test_from_string_uppercase(self):
         """Test from_string with uppercase input."""
-        assert KStackRoute.from_string("DEVELOPMENT") == KStackRoute.DEVELOPMENT
-        assert KStackRoute.from_string("TESTING") == KStackRoute.TESTING
-        assert KStackRoute.from_string("STAGING") == KStackRoute.STAGING
+        assert KStackEnvironment.from_string("DEV") == KStackEnvironment.DEVELOPMENT
+        assert KStackEnvironment.from_string("TEST") == KStackEnvironment.TESTING
+        assert KStackEnvironment.from_string("STAGING") == KStackEnvironment.STAGING
+        assert KStackEnvironment.from_string("PROD") == KStackEnvironment.PRODUCTION
 
     def test_from_string_mixed_case(self):
         """Test from_string with mixed case input."""
-        assert KStackRoute.from_string("Development") == KStackRoute.DEVELOPMENT
-        assert KStackRoute.from_string("TeStInG") == KStackRoute.TESTING
+        assert KStackEnvironment.from_string("Dev") == KStackEnvironment.DEVELOPMENT
+        assert KStackEnvironment.from_string("TeSt") == KStackEnvironment.TESTING
+        assert KStackEnvironment.from_string("PrOd") == KStackEnvironment.PRODUCTION
 
     def test_from_string_with_whitespace(self):
         """Test from_string strips whitespace."""
-        assert KStackRoute.from_string("  development  ") == KStackRoute.DEVELOPMENT
-        assert KStackRoute.from_string("\ttesting\n") == KStackRoute.TESTING
+        assert KStackEnvironment.from_string("  dev  ") == KStackEnvironment.DEVELOPMENT
+        assert KStackEnvironment.from_string("\ttest\n") == KStackEnvironment.TESTING
 
     def test_from_string_invalid(self):
         """Test from_string raises ValueError for invalid input."""
-        with pytest.raises(ValueError, match="Invalid route"):
-            KStackRoute.from_string("invalid-route")
+        with pytest.raises(ValueError, match="Invalid environment"):
+            KStackEnvironment.from_string("invalid-environment")
 
-        with pytest.raises(ValueError, match="Valid routes"):
-            KStackRoute.from_string("production")
+        with pytest.raises(ValueError, match="Valid environments"):
+            KStackEnvironment.from_string("testing")  # Old name should fail
 
-    def test_all_routes(self):
-        """Test all_routes returns all route enums."""
-        routes = KStackRoute.all_routes()
-        assert len(routes) == 5
-        assert KStackRoute.DEVELOPMENT in routes
-        assert KStackRoute.TESTING in routes
-        assert KStackRoute.STAGING in routes
-        assert KStackRoute.SCRATCH in routes
-        assert KStackRoute.DATA_COLLECTION in routes
+    def test_all_environments(self):
+        """Test all_environments returns all environment enums."""
+        environments = KStackEnvironment.all_environments()
+        assert len(environments) == 6  # Now includes PRODUCTION
+        assert KStackEnvironment.DEVELOPMENT in environments
+        assert KStackEnvironment.TESTING in environments
+        assert KStackEnvironment.STAGING in environments
+        assert KStackEnvironment.PRODUCTION in environments
+        assert KStackEnvironment.SCRATCH in environments
+        assert KStackEnvironment.DATA_COLLECTION in environments
 
     def test_iteration(self):
-        """Test that we can iterate over routes."""
-        routes = list(KStackRoute)
-        assert len(routes) == 5
+        """Test that we can iterate over environments."""
+        environments = list(KStackEnvironment)
+        assert len(environments) == 6  # Now includes PRODUCTION
 
 
 class TestKStackLayerFromString:

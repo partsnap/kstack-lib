@@ -1,130 +1,201 @@
-# Getting Started
+# Getting Started with KStack-lib
 
-This guide will help you get started with `kstack-lib` in your PartSnap service.
+This guide will help you get up and running with kstack-lib in your PartSnap services.
 
 ## Installation
 
-### Using uv (Recommended)
-
-```toml
-# pyproject.toml
-[project]
-dependencies = [
-    "kstack-lib @ git+https://github.com/partsnap/kstack-lib.git",
-]
-```
-
-Then run:
+Add kstack-lib to your project:
 
 ```bash
-uv sync
+uv add kstack-lib
 ```
 
-### Using pip
+## Basic Concepts
 
-```bash
-pip install git+https://github.com/partsnap/kstack-lib.git
+### Context-Aware Design
+
+KStack-lib automatically detects whether you're running:
+
+- **Locally**: On a development machine (uses vault files, local configs)
+- **In-Cluster**: Inside a Kubernetes pod (uses ConfigMaps and Secrets)
+
+You don't need to configure anything - the library detects the context automatically.
+
+### Three-Tier Architecture
+
+```
+kstack_lib/
+├── any/          # Shared code (protocols, types, container)
+├── local/        # Local development adapters
+└── cluster/      # Production K8s adapters
 ```
 
-## Basic Usage
+The IoC container selects the right adapter at runtime.
 
-### Redis Client
+## Common Use Cases
+
+### 1. Detect Current Environment
 
 ```python
-from kstack_lib import create_redis_client
+from kstack_lib import get_environment_detector
 
-# In a sync function
-def get_cached_part(mpn: str):
-    redis = create_redis_client(database='part-raw')
-    return redis.get(mpn)
+detector = get_environment_detector()
+environment = detector.get_environment()  # "development", "staging", or "production"
 
-# In an async function
-async def cache_part(mpn: str, data: dict):
-    redis = create_redis_client(database='part-raw')
-    try:
-        await redis.setex(mpn, 3600, json.dumps(data))
-    finally:
-        await redis.aclose()
+print(f"Running in {environment}")
 ```
 
-### LocalStack Client
+### 2. Access Cloud Storage
+
+The Cloud Abstraction Layer (CAL) provides a unified interface for cloud storage:
 
 ```python
-from kstack_lib import create_localstack_client
+from kstack_lib import get_cloud_storage_adapter
 
-# S3 client
-s3 = create_localstack_client('s3')
-buckets = s3.list_buckets()
+# Automatically uses S3 in cluster, LocalStack locally
+storage = get_cloud_storage_adapter(service="s3")
 
-# DynamoDB client (future)
-dynamodb = create_localstack_client('dynamodb')
+# Upload a file
+with open("data.json", "rb") as f:
+    storage.upload_file(
+        bucket="my-bucket",
+        key="path/to/file.json",
+        body=f
+    )
+
+# Download a file
+response = storage.download_file(
+    bucket="my-bucket",
+    key="path/to/file.json"
+)
+data = response["Body"].read()
+
+# List objects
+objects = storage.list_objects(
+    bucket="my-bucket",
+    prefix="path/to/"
+)
+for obj in objects.get("Contents", []):
+    print(obj["Key"])
 ```
 
-## Configuration
+### 3. Load Configuration
 
-### Local Development
+Configuration comes from different sources depending on context:
 
-Set the route environment variable:
+```python
+from kstack_lib.config import get_config
+
+# Loads from vault (local) or ConfigMap (cluster)
+config = get_config(
+    layer="layer3",
+    environment="development",
+    config_type="service"  # or "global"
+)
+
+# Access config values
+database_url = config.get("database", {}).get("url")
+```
+
+### 4. Access Secrets
+
+```python
+from kstack_lib import get_secrets_provider
+
+# Get secrets provider (vault locally, K8s Secrets in cluster)
+secrets = get_secrets_provider()
+
+# Get service credentials
+creds = secrets.get_credentials(
+    service="postgres",
+    layer="layer1",
+    environment="development"
+)
+
+database_url = creds["connection_string"]
+```
+
+## Development Workflow
+
+### Local Development Setup
+
+1. **Ensure vault is decrypted** (kstack-lib will use vault files):
 
 ```bash
-export KSTACK_ROUTE=development
+partsecrets reveal --team dev
 ```
 
-Create vault configuration file:
+2. **Set environment variables** (optional, for testing):
 
 ```bash
-mkdir -p ~/github/devops/partsnap-kstack/vault/dev
+export KSTACK_ENVIRONMENT=development
 ```
 
-```yaml
-# ~/github/devops/partsnap-kstack/vault/dev/redis-cloud.yaml
-development:
-  part-raw:
-    host: redis-development-raw.layer-3-cloud
-    port: 6379
-    username: default
-    password: partsnap-dev
+3. **Run your service**:
+
+```python
+from kstack_lib import get_environment_detector, get_cloud_storage_adapter
+
+# Automatically uses local adapters
+detector = get_environment_detector()
+storage = get_cloud_storage_adapter(service="s3")
+
+print(f"Environment: {detector.get_environment()}")  # "development"
+# Storage automatically uses LocalStack at http://localhost:4566
 ```
 
-### Kubernetes Deployment
+### Cluster Deployment
 
-The library automatically reads from Kubernetes secrets:
+When deployed to Kubernetes:
 
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: redis-credentials-development
-  namespace: layer-3-cloud
-type: Opaque
-data:
-  redis-host: <base64-encoded>
-  redis-port: <base64-encoded>
-  redis-username: <base64-encoded>
-  redis-password: <base64-encoded>
+1. **ConfigMaps** provide configuration
+2. **Secrets** provide credentials
+3. **Service Account** provides namespace/environment detection
+
+No code changes needed - kstack-lib detects the cluster context automatically.
+
+## Type System
+
+KStack-lib provides comprehensive types for infrastructure:
+
+```python
+from kstack_lib.types import KStackLayer, KStackEnvironment, KStackService
+
+# Layers
+layer = KStackLayer.LAYER_3_GLOBAL_INFRA
+
+# Environments
+env = KStackEnvironment.DEVELOPMENT
+
+# Services
+service = KStackService.S3
 ```
 
-Mount the `kstack-route` ConfigMap:
+See [API Reference: Types](api/types.md) for complete documentation.
 
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: my-service
-spec:
-  template:
-    spec:
-      containers:
-        - name: my-service
-          envFrom:
-            - configMapRef:
-                name: kstack-route
-                namespace: layer-3-cloud
+## Error Handling
+
+KStack-lib uses custom exceptions for different error scenarios:
+
+```python
+from kstack_lib.any.exceptions import (
+    KStackError,  # Base exception
+    KStackConfigurationError,  # Config issues
+    KStackServiceNotFoundError,  # Service not available
+    KStackEnvironmentError,  # Wrong context
+)
+
+try:
+    storage = get_cloud_storage_adapter(service="s3")
+    storage.upload_file(bucket="my-bucket", key="file.json", body=data)
+except KStackServiceNotFoundError:
+    print("S3 service not configured")
+except KStackConfigurationError as e:
+    print(f"Configuration error: {e}")
 ```
 
 ## Next Steps
 
-- [Redis Client Guide](guide/redis-client.md)
-- [LocalStack Client Guide](guide/localstack-client.md)
-- [Configuration Discovery](guide/configuration.md)
-- [API Reference](api/clients.md)
+- Learn about the [IoC Container](architecture/ioc-container.md)
+- Explore the [Cloud Abstraction Layer](architecture/cal-architecture.md)
+- Read the [Architecture Overview](architecture/README.md)

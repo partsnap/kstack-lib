@@ -5,28 +5,20 @@ site_description: Infrastructure client library for PartSnap services
 site_author: Laurent Brack
 edit_uri: edit/main/docs/
 repo_name: partsnap/kstack-lib
-copyright: 2024 PartSnap LLC.
+copyright: 2025 PartSnap LLC.
 dev_addr: 127.0.0.1:8100
 
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
-  - User Guide:
-      - Secrets Management: guide/secrets-management.md
-      - Redis Client: guide/redis-client.md
-      - LocalStack Client: guide/localstack-client.md
-      - Configuration Discovery: guide/configuration.md
+  - Architecture:
+      - Overview: architecture/README.md
+      - IoC Container: architecture/ioc-container.md
+      - Cloud Abstraction Layer: architecture/cal-architecture.md
   - API Reference:
-      - Overview: api/overview.md
       - Types: api/types.md
-      - Configuration: api/config.md
-      - Redis: api/redis.md
-      - LocalStack: api/localstack.md
-      - Clients: api/clients.md
   - Development:
-      - Contributing: development/contributing.md
-      - Running Tests: development/testing.md
-  - Changelog: CHANGELOG.md
+      - Testing: development/testing.md
 
 plugins:
   - search

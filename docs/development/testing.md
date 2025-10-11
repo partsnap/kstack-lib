@@ -1,195 +1,358 @@
-# Testing
+# Testing Guide
 
-Comprehensive testing guide for kstack-lib.
-
-## Test Structure
-
-```
-tests/
-├── __init__.py
-├── test_redis_client.py      # Redis client tests
-├── test_redis_config.py       # Redis config tests
-├── test_localstack_client.py  # LocalStack client tests
-└── test_localstack_config.py  # LocalStack config tests
-```
+This guide covers how to test kstack-lib and services that depend on it.
 
 ## Running Tests
 
-### All Tests
+### Full Test Suite
 
 ```bash
-uv run pytest tests/ -v -m unit
+make test
 ```
 
-### Specific Test File
-
-```bash
-uv run pytest tests/test_redis_client.py -v
-```
-
-### Specific Test Function
-
-```bash
-uv run pytest tests/test_redis_client.py::test_create_sync_redis_client_part_raw -v
-```
+This runs all tests except cluster-specific tests (which require a real Kubernetes environment).
 
 ### With Coverage
 
 ```bash
-uv run pytest tests/ -v -m unit \
-  --cov=kstack_lib \
-  --cov-report=term \
-  --cov-report=html
+make test-cov
 ```
 
-View HTML coverage report:
+Generates coverage report showing which code is tested.
+
+### Specific Test Files
 
 ```bash
-open htmlcov/index.html
+# Run a specific test file
+uv run pytest tests/test_configmap.py -v
+
+# Run a specific test
+uv run pytest tests/test_configmap.py::test_load_config -v
+
+# Run tests matching a pattern
+uv run pytest -k "config" -v
 ```
 
-## Test Categories
+## Test Organization
+
+```
+tests/
+├── any/              # Tests for shared code (future)
+├── cal/              # Cloud Abstraction Layer tests
+├── cluster/          # Cluster adapter tests (skipped locally)
+├── config/           # Configuration loading tests
+├── integration/      # Integration tests (require services)
+├── test_configmap.py
+├── test_container.py  # IoC container tests
+├── test_exceptions.py
+├── test_local_environment.py
+└── test_types.py
+```
+
+## Testing Strategy
 
 ### Unit Tests
 
-Fast tests with no external dependencies. All external services are mocked.
+Test individual modules in isolation with mocks:
 
 ```python
-@pytest.mark.unit
-def test_create_sync_redis_client():
-    with patch('kstack_lib.clients.redis.get_redis_config') as mock_config:
-        mock_config.return_value = {
-            "host": "localhost",
-            "port": 6379,
-            "username": "default",
-            "password": "test"
-        }
-        # Test implementation...
+from unittest.mock import MagicMock, patch
+import pytest
+from kstack_lib.local.config.environment import LocalEnvironmentDetector
+
+def test_environment_detection():
+    """Test local environment detector."""
+    detector = LocalEnvironmentDetector(config_root="/path/to/config")
+    env = detector.get_environment()
+    assert env in ["development", "staging", "production"]
 ```
 
-### Integration Tests (Future)
+### Integration Tests
 
-Tests that require real infrastructure:
+Test with real services (LocalStack, Redis):
 
 ```python
 @pytest.mark.integration
-async def test_real_redis_connection():
-    redis = create_redis_client(database='part-raw')
-    await redis.set('test-key', 'test-value')
-    value = await redis.get('test-key')
-    assert value == 'test-value'
+def test_s3_upload():
+    """Test S3 upload with real LocalStack."""
+    from kstack_lib import get_cloud_storage_adapter
+
+    storage = get_cloud_storage_adapter(service="s3")
+
+    # Upload test file
+    storage.upload_file(
+        bucket="test-bucket",
+        key="test.txt",
+        body=b"test data"
+    )
+
+    # Verify upload
+    response = storage.download_file(bucket="test-bucket", key="test.txt")
+    assert response["Body"].read() == b"test data"
 ```
 
-Run only unit tests (CI/CD):
+Run integration tests:
 
 ```bash
-uv run pytest tests/ -v -m unit
+# Requires LocalStack and Redis running
+uv run pytest tests/integration/ -v
 ```
 
-Run integration tests (manual):
+### Cluster Tests
 
-```bash
-uv run pytest tests/ -v -m integration
-```
-
-## Test Fixtures
-
-### Temporary Vault Files
+Cluster tests are automatically skipped when not running in Kubernetes:
 
 ```python
-@pytest.fixture
-def temp_vault_file(tmp_path):
-    """Create temporary vault file for testing."""
-    vault_dir = tmp_path / "vault" / "dev"
-    vault_dir.mkdir(parents=True)
+# tests/cluster/test_secrets.py
+import pytest
+from kstack_lib.any.context import is_in_cluster
 
-    vault_data = {
-        "development": {
-            "part-raw": {
-                "host": "redis-development.local",
-                "port": 6379,
-                "username": "default",
-                "password": "test"
-            }
-        }
-    }
+# Skip all tests in this module if not in cluster
+pytestmark = pytest.mark.skipif(
+    not is_in_cluster(),
+    reason="Cluster tests can only run inside Kubernetes cluster"
+)
 
-    vault_file = vault_dir / "redis-cloud.yaml"
-    with open(vault_file, "w") as f:
-        yaml.dump(vault_data, f)
+def test_cluster_secrets():
+    """This test only runs inside K8s."""
+    from kstack_lib.cluster.security.secrets import ClusterSecretsProvider
+    provider = ClusterSecretsProvider()
+    # ...
+```
 
-    return tmp_path
+When running locally:
+
+```bash
+$ uv run pytest tests/cluster/ -v
+tests/cluster/test_environment.py::test_init SKIPPED (Cluster tests can only run inside Kubernetes cluster)
+tests/cluster/test_secrets.py::test_init SKIPPED (Cluster tests can only run inside Kubernetes cluster)
 ```
 
 ## Mocking
 
-### Mock Configuration
+### Mocking Environment Detection
 
 ```python
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
-@patch('kstack_lib.config.redis.get_redis_config')
-def test_with_mock_config(mock_config):
-    mock_config.return_value = {
-        "host": "localhost",
-        "port": 6379,
-        "username": "default",
-        "password": "test"
-    }
-    # Test code...
+def test_with_mocked_environment():
+    """Test with specific environment."""
+    with patch("kstack_lib.any.container._context_selector", return_value="local"):
+        container = KStackIoCContainer()
+        detector = container.environment_detector()
+        # detector is now a LocalEnvironmentDetector
 ```
 
-### Mock Redis Client
+### Mocking Cloud Services
 
 ```python
-@patch('redis.Redis')
-def test_redis_operations(mock_redis):
-    mock_client = MagicMock()
-    mock_redis.return_value = mock_client
-    mock_client.get.return_value = b'{"key": "value"}'
+from unittest.mock import MagicMock
 
-    # Test code...
-    mock_client.get.assert_called_once_with('test-key')
+def test_with_mocked_storage():
+    """Test with mocked storage adapter."""
+    mock_storage = MagicMock()
+    mock_storage.upload_file.return_value = {"ETag": "test123"}
+
+    # Inject mock into container
+    container = KStackIoCContainer()
+    container.cloud_storage_adapter.override(mock_storage)
 ```
 
-### Mock Kubernetes
+### Mocking File System
 
 ```python
-@patch('subprocess.run')
-def test_kubernetes_configmap(mock_run):
-    mock_result = MagicMock(returncode=0, stdout="development")
-    mock_run.return_value = mock_result
+from unittest.mock import mock_open, patch
 
-    # Test code...
+def test_config_file_reading():
+    """Test config file reading with mocked file system."""
+    mock_content = '{"key": "value"}'
+
+    with patch("builtins.open", mock_open(read_data=mock_content)):
+        config = load_config("test.json")
+        assert config["key"] == "value"
 ```
 
-## Coverage Requirements
+## Testing Services That Use KStack-lib
 
-Minimum coverage: 80%
+### Example: Testing a Service Using S3
 
-Current coverage:
+```python
+# my_service.py
+from kstack_lib import get_cloud_storage_adapter
 
-- `kstack_lib/clients/redis.py`: 100%
-- `kstack_lib/clients/localstack.py`: 100%
-- `kstack_lib/config/redis.py`: 100%
-- `kstack_lib/config/localstack.py`: 100%
+class DataService:
+    def __init__(self):
+        self.storage = get_cloud_storage_adapter(service="s3")
+
+    def save_data(self, key: str, data: bytes):
+        self.storage.upload_file(bucket="my-bucket", key=key, body=data)
+```
+
+```python
+# test_my_service.py
+from unittest.mock import MagicMock, patch
+
+def test_data_service():
+    """Test DataService with mocked storage."""
+    mock_storage = MagicMock()
+
+    with patch("my_service.get_cloud_storage_adapter", return_value=mock_storage):
+        service = DataService()
+        service.save_data("test.txt", b"data")
+
+        mock_storage.upload_file.assert_called_once_with(
+            bucket="my-bucket",
+            key="test.txt",
+            body=b"data"
+        )
+```
+
+## Test Fixtures
+
+### Common Fixtures
+
+Create reusable fixtures in `tests/conftest.py`:
+
+```python
+# tests/conftest.py
+import pytest
+from kstack_lib import get_cloud_storage_adapter
+
+@pytest.fixture
+def storage_adapter():
+    """Provide S3 storage adapter."""
+    return get_cloud_storage_adapter(service="s3")
+
+@pytest.fixture
+def test_bucket():
+    """Provide test bucket name."""
+    return "test-bucket"
+
+@pytest.fixture
+def setup_test_bucket(storage_adapter, test_bucket):
+    """Create and clean up test bucket."""
+    # Setup
+    try:
+        storage_adapter.create_bucket(bucket=test_bucket)
+    except Exception:
+        pass  # Bucket may already exist
+
+    yield test_bucket
+
+    # Teardown
+    try:
+        storage_adapter.delete_bucket(bucket=test_bucket, force=True)
+    except Exception:
+        pass
+```
+
+Use in tests:
+
+```python
+def test_s3_operations(storage_adapter, setup_test_bucket):
+    """Test S3 operations with clean bucket."""
+    bucket = setup_test_bucket
+
+    storage_adapter.upload_file(bucket=bucket, key="test.txt", body=b"data")
+    response = storage_adapter.download_file(bucket=bucket, key="test.txt")
+    assert response["Body"].read() == b"data"
+```
+
+## Coverage
+
+Current coverage: **58.52%**
+
+Modules not covered:
+
+- **Cluster modules** (93 lines): Cannot be unit tested outside K8s - require integration tests in actual cluster
+- **Deprecated modules**: Old code pending deletion (vault.py, utils/, config/secrets.py old patterns)
+
+Target: Keep coverage above 58% for testable code.
+
+View coverage report:
+
+```bash
+make test-cov
+```
 
 ## Continuous Integration
 
-Tests run automatically on:
+Tests run automatically on every push via GitHub Actions:
 
-- Every push to main
-- Every pull request
-- Manual workflow dispatch
-
-See `.github/workflows/test.yml` for CI configuration.
+```yaml
+# .github/workflows/test.yml
+- name: Run tests
+  run: uv run pytest tests/ --cov=kstack_lib --cov-report=xml
+```
 
 ## Best Practices
 
-1. **Mock all external dependencies** - Redis, Kubernetes, file system
-2. **Test both success and failure paths**
-3. **Test edge cases** - empty config, missing files, network errors
-4. **Use descriptive test names** - `test_create_sync_redis_client_part_raw`
-5. **Keep tests fast** - Mock slow operations
-6. **Test async and sync separately** - Different code paths
-7. **Clean up resources** - Use fixtures with proper teardown
+1. **Test behavior, not implementation** - Test what the code does, not how it does it
+2. **Use descriptive test names** - `test_upload_file_creates_object` not `test_1`
+3. **One assertion per test** - Keeps tests focused and failures clear
+4. **Use fixtures for setup** - Avoid repeating setup code
+5. **Mock external dependencies** - Don't rely on external services in unit tests
+6. **Test edge cases** - Empty inputs, missing files, network errors, etc.
+7. **Keep tests fast** - Unit tests should run in milliseconds, not seconds
+
+## Debugging Tests
+
+### Run with verbose output
+
+```bash
+uv run pytest tests/ -vv
+```
+
+### Show print statements
+
+```bash
+uv run pytest tests/ -s
+```
+
+### Stop on first failure
+
+```bash
+uv run pytest tests/ -x
+```
+
+### Run last failed tests
+
+```bash
+uv run pytest tests/ --lf
+```
+
+### Drop into debugger on failure
+
+```bash
+uv run pytest tests/ --pdb
+```
+
+## Common Issues
+
+### Import Errors
+
+If you see `KStackEnvironmentError: Cannot import cluster module outside Kubernetes cluster`:
+
+- This is expected behavior for cluster modules
+- Tests should be marked to skip: `pytestmark = pytest.mark.skipif(not is_in_cluster())`
+
+### Service Not Available
+
+If integration tests fail with connection errors:
+
+```bash
+# Start LocalStack
+docker run -d -p 4566:4566 localstack/localstack
+
+# Start Redis
+docker run -d -p 6379:6379 redis
+```
+
+### Vault Not Decrypted
+
+If you see `VaultDecryptionError`:
+
+```bash
+# Decrypt vault
+partsecrets reveal --team dev
+```

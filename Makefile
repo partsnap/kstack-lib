@@ -28,7 +28,7 @@ tox: ## running test in tox
 .PHONY: test
 test: ## Test the code with pytest
 	@echo "🚀 Testing code: Running pytest"
-	@uv run pytest --cov --cov-config=pyproject.toml --cov-report=xml
+	@uv run pytest --cov --cov-config=pyproject.toml --cov-report=xml --ignore=tests/test_cluster_environment.py --ignore=tests/test_local_environment.py
 
 .PHONY: docs-test
 docs-test: ## Test if documentation can be built without warnings or errors

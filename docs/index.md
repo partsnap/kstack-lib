@@ -1,135 +1,68 @@
 # KStack Library
 
-Infrastructure client library for PartSnap services.
+**Infrastructure client library for PartSnap Kubernetes stack**
 
-??? tip "Check the library version"
+KStack-lib provides a unified, context-aware interface for accessing infrastructure services across development and production environments.
 
-    kstack-lib versioning is managed by hatch-vcs
+## Key Features
 
-    ```bash
-        uv pip show kstack-lib
-        Name: kstack-lib
-        Version: 0.1.1.dev2+g88c942fe9.d19800101
-        Location: /home/lbrack/github/devops/kstack-lib/.venv/lib/python3.13/site-packages
-        Editable project location: /home/lbrack/github/devops/kstack-lib
-        Requires: pydantic, pyyaml, redis
-    ```
-
-## Overview
-
-`kstack-lib` provides reusable components for Layer 2 services (like PartFinder) to connect to Layer 3 infrastructure (Redis, LocalStack) with automatic configuration discovery based on the active route.
-
-**Key Features:**
-
-- **Redis Client Factory**: Auto-discovers Redis instances based on active route
-- **LocalStack Client Factory**: Auto-discovers LocalStack endpoints for AWS emulation
-- **Route-based Configuration**: Supports development, testing, staging, scratch routes
-- **Async/Sync Support**: Automatically detects async context and returns appropriate client
-- **Vault & K8s Integration**: Reads configuration from vault files or Kubernetes secrets
+- **Context-Aware Architecture**: Automatically adapts behavior based on runtime environment (local development vs. Kubernetes cluster)
+- **Cloud Abstraction Layer (CAL)**: Unified interface for cloud storage (S3/LocalStack) with pluggable adapters
+- **Dependency Injection**: IoC container manages dependencies and wiring across contexts
+- **Type Safety**: Comprehensive type system for layers, environments, and services
+- **Zero Configuration**: Works out-of-the-box in both local and cluster contexts
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# With pip
-pip install git+https://github.com/partsnap/kstack-lib.git
-
-# With uv
-uv add git+https://github.com/partsnap/kstack-lib.git
+uv add kstack-lib
 ```
 
-### Redis Client Example
+### Basic Usage
 
 ```python
-from kstack_lib import create_redis_client
+from kstack_lib import get_environment_detector, get_cloud_storage_adapter
 
-# Synchronous usage
-redis = create_redis_client(database='part-raw')
-redis.set('product:123', '{"name": "Widget"}')
-value = redis.get('product:123')
+# Automatically detects environment (dev/staging/production)
+detector = get_environment_detector()
+environment = detector.get_environment()
 
-# Async usage (automatically detected)
-import asyncio
+# Get cloud storage adapter (S3 in cluster, LocalStack locally)
+storage = get_cloud_storage_adapter(service="s3")
 
-async def main():
-    redis = create_redis_client(database='part-raw')  # Returns async client
-    await redis.set('product:123', '{"name": "Widget"}')
-    value = await redis.get('product:123')
-    await redis.aclose()
-
-asyncio.run(main())
+# Upload a file
+with open("data.json", "rb") as f:
+    storage.upload_file(
+        bucket="my-bucket",
+        key="data/file.json",
+        body=f
+    )
 ```
 
-### LocalStack Client Example
+## Architecture Overview
 
-```python
-from kstack_lib import create_localstack_client
+KStack-lib uses a three-tier architecture:
 
-# Get boto3 S3 client configured for LocalStack
-s3 = create_localstack_client('s3')
-s3.list_buckets()
+1. **`kstack_lib.any`**: Shared code that works everywhere (protocols, types, container)
+2. **`kstack_lib.local`**: Local development adapters (uses vault files, local configs)
+3. **`kstack_lib.cluster`**: Production adapters (uses K8s ConfigMaps and Secrets)
 
-# Async usage
-import aioboto3
+The IoC container automatically selects the correct implementation based on runtime context.
 
-async def main():
-    s3 = create_localstack_client('s3')  # Returns aioboto3 session
-    async with s3 as client:
-        response = await client.list_buckets()
-        print(response['Buckets'])
+## Documentation Structure
 
-asyncio.run(main())
-```
+- **[Getting Started](getting-started.md)**: Quick start guide and common use cases
+- **[Architecture](architecture/README.md)**: Deep dive into design patterns and structure
+- **[API Reference](api/types.md)**: Type system and API documentation
+- **[Development](development/testing.md)**: Testing and contributing guide
 
-## Architecture
+## Related Projects
 
-### Layer Separation
-
-- **Layer 3** (Infrastructure): Redis, LocalStack instances per route
-- **Layer 2** (Services): PartFinder, other services using kstack-lib
-- **kstack-lib**: Bridges Layer 2 ↔ Layer 3 with configuration discovery
-
-Services depend on `kstack-lib`, NOT on `partsnap-kstack` (the deployment CLI).
-
-### Route-Based Configuration
-
-The library automatically discovers the active route from:
-
-1. `KSTACK_ROUTE` environment variable (local development)
-2. `kstack-route` ConfigMap in Kubernetes (deployed services)
-3. Defaults to `development`
-
-Then reads configuration from:
-
-1. **Vault files** (local development):
-
-   ```
-   ~/github/devops/partsnap-kstack/vault/dev/redis-cloud.yaml
-   ```
-
-2. **Kubernetes Secrets** (deployed):
-   ```yaml
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: redis-credentials-development
-     namespace: layer-3-cloud
-   data:
-     redis-host: <base64>
-     redis-port: <base64>
-     redis-username: <base64>
-     redis-password: <base64>
-   ```
-
-## Next Steps
-
-- [Getting Started Guide](getting-started.md)
-- [Redis Client Documentation](guide/redis-client.md)
-- [LocalStack Client Documentation](guide/localstack-client.md)
-- [Configuration Discovery](guide/configuration.md)
-- [API Reference](api/clients.md)
+- **[partmaster](https://github.com/partsnap/partmaster)**: API service using kstack-lib
+- **[kstack CLI](https://github.com/partsnap/kstack-cli)**: Deployment and management tools
 
 ## License
 
-Proprietary - PartSnap Inc.
+Proprietary - PartSnap LLC © 2025

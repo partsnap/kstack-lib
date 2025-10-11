@@ -9,7 +9,7 @@ import os
 import subprocess
 from pathlib import Path
 
-from kstack_lib.types import KStackLayer
+from kstack_lib.types import KStackEnvironment, KStackLayer
 
 
 class ConfigMap:
@@ -36,7 +36,7 @@ class ConfigMap:
 
     """
 
-    def __init__(self, layer: KStackLayer | None = None):
+    def __init__(self, layer: KStackLayer | None = None, environment: KStackEnvironment | None = None):
         """
         Initialize ConfigMap accessor.
 
@@ -44,6 +44,8 @@ class ConfigMap:
         ----
             layer: KStack layer to access. If not provided, auto-detects
                    current layer when running in Kubernetes pod.
+            environment: KStack environment (dev, testing, staging, production).
+                        If not provided, uses get_active_route() for compatibility.
 
         Raises:
         ------
@@ -52,7 +54,10 @@ class ConfigMap:
 
         Example:
         -------
-            >>> # Explicit layer
+            >>> # Explicit layer and environment
+            >>> cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA, environment=KStackEnvironment.DEVELOPMENT)
+
+            >>> # Explicit layer (environment auto-detected)
             >>> cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA)
 
             >>> # Auto-detect (only works in Kubernetes)
@@ -74,6 +79,7 @@ class ConfigMap:
                 raise ValueError(f"Unknown namespace: {namespace}. Cannot determine layer.") from e
 
         self.layer = layer
+        self._environment = environment
 
     @staticmethod
     def running_in_k8s() -> bool:
@@ -128,6 +134,49 @@ class ConfigMap:
 
         """
         return self.layer.namespace
+
+    @property
+    def environment(self) -> KStackEnvironment:
+        """
+        Get the active environment for this layer.
+
+        Returns the environment by checking (in order):
+        1. Environment passed to __init__
+        2. KSTACK_ROUTE environment variable mapped to KStackEnvironment
+        3. kstack-route ConfigMap mapped to KStackEnvironment
+        4. Falls back to KStackEnvironment.DEVELOPMENT
+
+        Returns:
+        -------
+            Active environment (DEVELOPMENT, TESTING, STAGING, PRODUCTION, SCRATCH, DATA_COLLECTION)
+
+        Example:
+        -------
+            >>> cfg = ConfigMap(layer=KStackLayer.LAYER_3_GLOBAL_INFRA, environment=KStackEnvironment.DEVELOPMENT)
+            >>> cfg.environment
+            <KStackEnvironment.DEVELOPMENT: 'dev'>
+
+        """
+        if self._environment is not None:
+            return self._environment
+
+        # Fall back to route-based system and map to environment
+        route = self.get_active_route()
+
+        # Map route strings to KStackEnvironment (with backward compatibility)
+        route_to_env = {
+            "development": KStackEnvironment.DEVELOPMENT,
+            "dev": KStackEnvironment.DEVELOPMENT,
+            "testing": KStackEnvironment.TESTING,  # Backward compatibility
+            "test": KStackEnvironment.TESTING,
+            "staging": KStackEnvironment.STAGING,
+            "production": KStackEnvironment.PRODUCTION,  # Backward compatibility
+            "prod": KStackEnvironment.PRODUCTION,
+            "scratch": KStackEnvironment.SCRATCH,
+            "data-collection": KStackEnvironment.DATA_COLLECTION,
+        }
+
+        return route_to_env.get(route, KStackEnvironment.DEVELOPMENT)
 
     def get_active_route(self) -> str:
         """
@@ -265,4 +314,8 @@ class ConfigMap:
 
     def __repr__(self) -> str:
         """Return string representation of ConfigMap accessor."""
-        return f"ConfigMap(layer={self.layer.value}, namespace={self.layer.namespace})"
+        return (
+            f"ConfigMap(layer={self.layer.value}, "
+            f"namespace={self.layer.namespace}, "
+            f"environment={self.environment.value})"
+        )

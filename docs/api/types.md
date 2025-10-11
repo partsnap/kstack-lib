@@ -10,7 +10,7 @@ The types module (`kstack_lib.types`) provides clean, type-safe enumerations for
 
 Layer enumeration representing the 4-tier KStack architecture.
 
-::: kstack_lib.types.layers.KStackLayer
+::: kstack_lib.any.types.layers.KStackLayer
 options:
 show_root_heading: true
 show_source: true
@@ -163,42 +163,40 @@ for layer in KStackLayer:
 # Layer 3: Global Infrastructure → layer-3-cloud
 ```
 
-## KStackRoute
+## KStackEnvironment
 
-Route enumeration representing different deployment environments.
+Environment enumeration representing different deployment environments.
 
-::: kstack_lib.types.routes.KStackRoute
+::: kstack_lib.any.types.environments.KStackEnvironment
 options:
 show_root_heading: true
 show_source: true
-members: - DEVELOPMENT - TESTING - STAGING - SCRATCH - DATA_COLLECTION - from_string - all_routes
+members: - DEVELOPMENT - STAGING - PRODUCTION - from_string
 
-### Understanding Routes
+### Understanding Environments
 
-Routes represent independent deployment environments that can run simultaneously.
+Environments represent different deployment stages with varying security and stability requirements.
 
-#### Available Routes
+#### Available Environments
 
-| Route             | Purpose           | Typical Use Case                   |
-| ----------------- | ----------------- | ---------------------------------- |
-| `DEVELOPMENT`     | Local development | Developer machines, quick testing  |
-| `TESTING`         | Automated testing | CI/CD pipelines, integration tests |
-| `STAGING`         | Pre-production    | QA testing, client demos           |
-| `SCRATCH`         | Experimentation   | Temporary testing, POCs            |
-| `DATA_COLLECTION` | Data gathering    | Analytics, metrics collection      |
+| Environment   | Purpose                | Typical Use Case                           |
+| ------------- | ---------------------- | ------------------------------------------ |
+| `DEVELOPMENT` | Local development      | Developer machines, rapid iteration        |
+| `STAGING`     | Pre-production testing | QA testing, client demos, final validation |
+| `PRODUCTION`  | Live production        | Customer-facing production systems         |
 
 ### Basic Usage
 
 ```python
-from kstack_lib.types import KStackRoute
+from kstack_lib.types import KStackEnvironment
 
 # Use enum values
-route = KStackRoute.DEVELOPMENT
-print(route.value)  # 'development'
+env = KStackEnvironment.DEVELOPMENT
+print(env.value)  # 'development'
 
-# Check current route
-current_route = KStackRoute.DEVELOPMENT
-if current_route == KStackRoute.DEVELOPMENT:
+# Check current environment
+current_env = KStackEnvironment.DEVELOPMENT
+if current_env == KStackEnvironment.DEVELOPMENT:
     print("Running in development mode")
 ```
 
@@ -206,50 +204,36 @@ if current_route == KStackRoute.DEVELOPMENT:
 
 #### `from_string(value: str)`
 
-Convert string to route enum (case-insensitive).
+Convert string to environment enum (case-insensitive).
 
 ```python
-route = KStackRoute.from_string('development')  # KStackRoute.DEVELOPMENT
-route = KStackRoute.from_string('TESTING')      # KStackRoute.TESTING
-route = KStackRoute.from_string('staging')      # KStackRoute.STAGING
+env = KStackEnvironment.from_string('development')  # KStackEnvironment.DEVELOPMENT
+env = KStackEnvironment.from_string('STAGING')      # KStackEnvironment.STAGING
+env = KStackEnvironment.from_string('production')   # KStackEnvironment.PRODUCTION
 ```
 
-**Raises**: `ValueError` if value doesn't match any route
-
-#### `all_routes()`
-
-Get list of all available routes.
-
-```python
-routes = KStackRoute.all_routes()
-# Returns: [KStackRoute.DEVELOPMENT, KStackRoute.TESTING, ...]
-
-for route in routes:
-    print(route.value)
-```
+**Raises**: `ValueError` if value doesn't match any environment
 
 ### Iteration
 
 ```python
-from kstack_lib.types import KStackRoute
+from kstack_lib.types import KStackEnvironment
 
-# Print all routes
-for route in KStackRoute:
-    print(f"Route: {route.value}")
+# Print all environments
+for env in KStackEnvironment:
+    print(f"Environment: {env.value}")
 
 # Output:
-# Route: development
-# Route: testing
-# Route: staging
-# Route: scratch
-# Route: data-collection
+# Environment: development
+# Environment: staging
+# Environment: production
 ```
 
 ## LayerChoice
 
 Extended layer enumeration for CLI commands, including "all" option.
 
-::: kstack_lib.types.layers.LayerChoice
+::: kstack_lib.any.types.layers.LayerChoice
 options:
 show_root_heading: true
 show_source: true
@@ -306,9 +290,9 @@ layer = "layer3-global"         # Wrong format, runtime error
 Your IDE can suggest valid values when using enums:
 
 ```python
-from kstack_lib.types import KStackRoute
+from kstack_lib.types import KStackEnvironment
 
-route = KStackRoute.  # IDE shows: DEVELOPMENT, TESTING, STAGING, etc.
+env = KStackEnvironment.  # IDE shows: DEVELOPMENT, STAGING, PRODUCTION
 ```
 
 ### 3. Refactoring Safety
@@ -338,33 +322,33 @@ print(f"Running in: {layer.display_name}")
 print(f"Namespace: {layer.namespace}")
 ```
 
-### Example 2: Route Switching
+### Example 2: Environment-Specific Configuration
 
 ```python
-from kstack_lib.types import KStackRoute
+from kstack_lib.types import KStackEnvironment
 
-def configure_for_route(route: KStackRoute) -> dict:
-    """Get route-specific configuration."""
-    if route == KStackRoute.DEVELOPMENT:
+def configure_for_environment(env: KStackEnvironment) -> dict:
+    """Get environment-specific configuration."""
+    if env == KStackEnvironment.DEVELOPMENT:
         return {
             'debug': True,
             'log_level': 'DEBUG',
             'cache_ttl': 60,
         }
-    elif route == KStackRoute.PRODUCTION:
+    elif env == KStackEnvironment.PRODUCTION:
         return {
             'debug': False,
             'log_level': 'WARNING',
             'cache_ttl': 3600,
         }
-    else:
+    else:  # STAGING
         return {
             'debug': True,
             'log_level': 'INFO',
             'cache_ttl': 300,
         }
 
-config = configure_for_route(KStackRoute.DEVELOPMENT)
+config = configure_for_environment(KStackEnvironment.DEVELOPMENT)
 ```
 
 ### Example 3: Multi-Layer Operations
@@ -377,11 +361,10 @@ def check_all_layers():
     """Check status of all layers."""
     for layer in KStackLayer:
         cfg = ConfigMap(layer=layer)
-        route = cfg.get_active_route()
 
         print(f"{layer.display_name}:")
         print(f"  Namespace: {cfg.namespace}")
-        print(f"  Route: {route}")
+        print(f"  Environment: {cfg.environment.value}")
         print()
 
 check_all_layers()
@@ -392,10 +375,10 @@ check_all_layers()
 ### ✅ DO: Use Enums
 
 ```python
-from kstack_lib.types import KStackLayer, KStackRoute
+from kstack_lib.types import KStackLayer, KStackEnvironment
 
 layer = KStackLayer.LAYER_3_GLOBAL_INFRA
-route = KStackRoute.DEVELOPMENT
+env = KStackEnvironment.DEVELOPMENT
 ```
 
 ### ❌ DON'T: Use Strings
@@ -403,7 +386,7 @@ route = KStackRoute.DEVELOPMENT
 ```python
 # Avoid this
 layer = "layer-3-global-infra"
-route = "development"
+env = "development"
 ```
 
 ### ✅ DO: Use from_string() for User Input
@@ -416,7 +399,7 @@ layer = KStackLayer.from_string(user_input)
 ### ✅ DO: Type Hint with Enums
 
 ```python
-def deploy(layer: KStackLayer, route: KStackRoute) -> None:
+def deploy(layer: KStackLayer, env: KStackEnvironment) -> None:
     """Type hints provide safety and documentation."""
     pass
 ```
