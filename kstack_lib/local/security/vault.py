@@ -110,8 +110,15 @@ class KStackVault:
 
         Returns True if ANY secret.* file lacks its decrypted counterpart.
         In partsecrets, all files are encrypted/decrypted together.
+
+        Note: Skips metadata files like secret.map.cfg which are not encrypted.
         """
         for secret_file in self.path.rglob("secret.*"):
+            # Skip metadata files (partsecrets configuration)
+            # secret.map.cfg tells partsecrets which files to encrypt, it's not encrypted itself
+            if secret_file.suffix in {".cfg", ".conf", ".config"}:
+                continue
+
             # Get decrypted filename by removing "secret." prefix
             decrypted_name = secret_file.name.replace("secret.", "", 1)
             decrypted_file = secret_file.parent / decrypted_name
