@@ -111,6 +111,7 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
+    "-m", "not integration",  # Exclude integration tests by default
 ]
 markers = [
     "unit: Unit tests (fast, no external dependencies)",

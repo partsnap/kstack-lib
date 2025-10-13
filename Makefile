@@ -26,9 +26,19 @@ tox: ## running test in tox
 	@uv run tox --recreate
 
 .PHONY: test
-test: ## Test the code with pytest
+test: ## Test the code with pytest (excludes integration tests)
 	@echo "🚀 Testing code: Running pytest"
-	@uv run pytest --cov --cov-config=pyproject.toml --cov-report=xml --ignore=tests/test_cluster_environment.py --ignore=tests/test_local_environment.py
+	@uv run pytest --cov --cov-config=pyproject.toml --cov-report=xml
+
+.PHONY: test-integration
+test-integration: ## Run integration tests only (requires infrastructure)
+	@echo "🚀 Testing code: Running integration tests"
+	@uv run pytest -m integration -v
+
+.PHONY: test-all
+test-all: ## Run all tests including integration tests
+	@echo "🚀 Testing code: Running all tests"
+	@uv run pytest -m "" --cov --cov-config=pyproject.toml --cov-report=xml
 
 .PHONY: docs-test
 docs-test: ## Test if documentation can be built without warnings or errors
